@@ -1,98 +1,341 @@
 import { FormEvent, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 
-type ParsedItem = {
+type CaseFieldKey =
+  | 'profile_title'
+  | 'case_code'
+  | 'marital_status'
+  | 'age'
+  | 'birth_month_year'
+  | 'education'
+  | 'clothing_and_religiosity'
+  | 'satellite_view'
+  | 'height_cm'
+  | 'weight_kg'
+  | 'skin_color'
+  | 'birth_city'
+  | 'residence_city'
+  | 'parents_birth_place'
+  | 'parents_education'
+  | 'father_job_and_financial_status'
+  | 'siblings_count'
+  | 'birth_order'
+  | 'previous_marriage_and_children'
+  | 'personality_traits'
+  | 'future_spouse_criteria'
+  | 'accepts_other_cities_and_villages'
+  | 'acceptable_spouse_age_from'
+  | 'acceptable_spouse_age_to';
+
+type CaseFieldDefinition = {
+  key: CaseFieldKey;
   label: string;
-  value: string;
+  placeholder: string;
 };
 
-type ParsedCase = {
-  hashtags: string[];
-  items: ParsedItem[];
+type CaseFormValues = Record<CaseFieldKey, string>;
+
+type ParseResult = {
+  values: CaseFormValues;
+  code: string;
 };
 
-const sampleCaseText = `💙 #آقا_دهه_هفتاد_مجرد      کد: 1674
+const CASE_TABLE_NAME = 'marriage_cases';
+
+const CASE_FIELD_DEFINITIONS: CaseFieldDefinition[] = [
+  { key: 'profile_title', label: 'profile_title', placeholder: 'e.g. ❤️ #خانم_دهه_هفتاد_مجرد' },
+  { key: 'case_code', label: 'case_code', placeholder: 'e.g. 1687' },
+  { key: 'marital_status', label: 'marital_status', placeholder: 'e.g. single' },
+  { key: 'age', label: 'age', placeholder: 'e.g. 25' },
+  { key: 'birth_month_year', label: 'birth_month_year', placeholder: 'e.g. Azar 1379' },
+  { key: 'education', label: 'education', placeholder: 'e.g. master student' },
+  { key: 'clothing_and_religiosity', label: 'clothing_and_religiosity', placeholder: 'e.g. modest manteau, medium religiosity' },
+  { key: 'satellite_view', label: 'satellite_view', placeholder: 'e.g. opposed' },
+  { key: 'height_cm', label: 'height_cm', placeholder: 'e.g. 160' },
+  { key: 'weight_kg', label: 'weight_kg', placeholder: 'e.g. 56' },
+  { key: 'skin_color', label: 'skin_color', placeholder: 'e.g. wheatish' },
+  { key: 'birth_city', label: 'birth_city', placeholder: 'e.g. Kashan' },
+  { key: 'residence_city', label: 'residence_city', placeholder: 'e.g. Kashan' },
+  { key: 'parents_birth_place', label: 'parents_birth_place', placeholder: 'e.g. Kashan' },
+  { key: 'parents_education', label: 'parents_education', placeholder: 'e.g. below diploma' },
+  {
+    key: 'father_job_and_financial_status',
+    label: 'father_job_and_financial_status',
+    placeholder: 'e.g. retired, medium financial status',
+  },
+  { key: 'siblings_count', label: 'siblings_count', placeholder: 'e.g. 3 brothers' },
+  { key: 'birth_order', label: 'birth_order', placeholder: 'e.g. 4th' },
+  {
+    key: 'previous_marriage_and_children',
+    label: 'previous_marriage_and_children',
+    placeholder: 'e.g. none',
+  },
+  {
+    key: 'personality_traits',
+    label: 'personality_traits',
+    placeholder: 'e.g. committed, outgoing, respectful',
+  },
+  {
+    key: 'future_spouse_criteria',
+    label: 'future_spouse_criteria',
+    placeholder: 'e.g. religious, educated, social',
+  },
+  {
+    key: 'accepts_other_cities_and_villages',
+    label: 'accepts_other_cities_and_villages',
+    placeholder: 'e.g. yes',
+  },
+  {
+    key: 'acceptable_spouse_age_from',
+    label: 'acceptable_spouse_age_from',
+    placeholder: 'e.g. 27',
+  },
+  {
+    key: 'acceptable_spouse_age_to',
+    label: 'acceptable_spouse_age_to',
+    placeholder: 'e.g. 33',
+  },
+];
+
+const FIELD_LABEL_LOOKUP = new Map<string, CaseFieldKey>([
+  ['سن', 'age'],
+  ['ماه و سال تولد', 'birth_month_year'],
+  ['تحصیلات', 'education'],
+  ['نوع پوشش و میزان اعتقادات', 'clothing_and_religiosity'],
+  ['نظرتون در مورد ماهواره', 'satellite_view'],
+  ['قد', 'height_cm'],
+  ['وزن', 'weight_kg'],
+  ['رنگ پوست', 'skin_color'],
+  ['شهر محل تولد', 'birth_city'],
+  ['شهر محل سکونت', 'residence_city'],
+  ['محل تولد والدین', 'parents_birth_place'],
+  ['میزان تحصیلات والدین', 'parents_education'],
+  ['شغل پدر و سطح مالی خانواده', 'father_job_and_financial_status'],
+  ['تعداد خواهر و برادر', 'siblings_count'],
+  ['فرزند چندم هستید', 'birth_order'],
+  ['فرزند چندم خانواده', 'birth_order'],
+  ['توضیحات در مورد ازدواج قبلی و تعداد فرزند', 'previous_marriage_and_children'],
+  ['مشخصات اخلاقی و رفتاری', 'personality_traits'],
+  ['معیار همسر آینده', 'future_spouse_criteria'],
+  ['از روستا و شهرهای دیگه میپذیرید', 'accepts_other_cities_and_villages'],
+  ['از روستاها و شهرهای دیگه می پذیرید', 'accepts_other_cities_and_villages'],
+  ['همسر از چند تا چند سال میپذیرید', 'acceptable_spouse_age_from'],
+  ['همسر از چند تا چند سال می‌پذیرید', 'acceptable_spouse_age_from'],
+]);
+
+const sampleCaseText = `❤️ #خانم_دهه_هفتاد_مجرد
+کد: 1687
 
 #مجرد
-سن: ۳۴
-ماه و سال تولد: بهمن ۱۳۷۰
-تحصیلات: فوق لیسانس 
-وضعیت سربازی: پایان خدمت
-شغل: مربی پرورشی
-میزان درآمد ماهیانه: طبق قانون 
-میزان اعتقادات: مذهبی انقلابی
+سن: ۲۵
+ماه و سال تولد: آذر ۱۳۷۹
+تحصیلات: دانشجوی ارشد
+نوع پوشش و میزان اعتقادات: مانتویی محجوب و گاهی چادر ، مذهبی متوسط
 نظرتون در مورد ماهواره: مخالف
-قد: ۱۸۳
-وزن: ۶۲
+قد: ۱۶۰
+وزن: ۵۶
 رنگ پوست: گندمی
 شهر محل تولد: کاشان
 شهر محل سکونت: کاشان
-محل تولد والدین: کاشان 
-میزان تحصیلات والدین: راهنمایی 
-شغل پدر و سطح مالی خانواده: آزاد ، سطح متوسط 
-تعداد خواهر و برادر: یک خواهر و ۳ برادر
-فرزند چندم خانواده: چهارم
-توضیحات در مورد ازدواج قبلی و تعداد فرزند: ـــــــــ
-مشخصات اخلاقی و رفتاری: متدین، صبور، قانع، خوش اخلاق، مهربان، آرام، مودب، سادات.
-معیار همسر آینده: مذهبی انقلابی، محجبه و چادری، خوش اخلاق، باایمان، تحصیلکرده، شاغل نباشه اگرم بود شغل دولتی و یا کار خونگی باشه، معلم باشه بهتره، خانواده باایمان داشته باشه، قدش ۱۶۵ به بالا باشه بهتره.
-از روستاها و شهرهای دیگه می پذیرید: بشرط سکونت در کاشان 
-همسر از چند تا چند سال می‌پذیرید: از ۲۸ تا ۳۲`;
+محل تولد والدین: کاشان
+میزان تحصیلات والدین: زیر دیپلم
+شغل پدر و سطح مالی خانواده: بازنشسته آزاد ، سطح متوسط
+تعداد خواهر و برادر: ۳ برادر
+فرزند چندم هستید: چهارم
+توضیحات در مورد ازدواج قبلی و تعداد فرزند: ----
+مشخصات اخلاقی و رفتاری: مقید، برونگرا، اهل رعایت آداب و احترام در رفتار و بیان، به مطالعه و رشد و یادگیری خیلی بها میدن.
+معیار همسر آینده: مذهبی و مقید باشن، از نظر تحصیلات هم کفو، اهل مطالعه، شغل خوب، اجتماعی مردم دار
+از روستا و شهرهای دیگه می‌پذیرید: بله
+همسر از چند تا چند سال می‌پذیرید: از ۲۷ تا ۳۳`;
 
-function parseCaseText(text: string): ParsedCase {
+function createEmptyCaseValues(): CaseFormValues {
+  return CASE_FIELD_DEFINITIONS.reduce((accumulator, field) => {
+    accumulator[field.key] = '';
+    return accumulator;
+  }, {} as CaseFormValues);
+}
+
+function normalizeText(value: string) {
+  return value
+    .replace(/[ي]/g, 'ی')
+    .replace(/[ك]/g, 'ک')
+    .replace(/[‌‍\u200f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+function normalizeDigits(value: string) {
+  return value
+    .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)))
+    .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)));
+}
+
+function toNumericString(value: string) {
+  const normalized = normalizeDigits(value);
+  const match = normalized.match(/-?\d+/);
+  return match ? match[0] : '';
+}
+
+function mapRangeValue(value: string) {
+  const normalized = normalizeDigits(value);
+  const match = normalized.match(/(?:از\s*)?(\d+)\s*(?:تا|-)\s*(\d+)/);
+
+  if (!match) {
+    return { from: '', to: '' };
+  }
+
+  return { from: match[1], to: match[2] };
+}
+
+function parseCaseText(text: string): ParseResult {
+  const values = createEmptyCaseValues();
   const lines = text
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
 
-  const hashtags = Array.from(
-    new Set(
-      lines.flatMap((line) => {
-        const matches = line.match(/#[^\s#]+/g) ?? [];
-        return matches;
-      })
-    )
-  ).slice(0, 2);
-
-  const items: ParsedItem[] = [];
-
-  for (const line of lines) {
-    const hasAsciiColon = line.includes(':');
-    const hasPersianColon = line.includes('：');
-
-    if (!hasAsciiColon && !hasPersianColon) continue;
-
-    const separator = hasAsciiColon ? ':' : '：';
-    const [rawLabel, ...rest] = line.split(separator);
-    const label = rawLabel.includes('#')
-      ? rawLabel.replace(/^.*#[^\s#]+\s+/u, '').trim()
-      : rawLabel.trim();
-    const value = rest.join(separator).trim();
-
-    if (!label || !value) continue;
-
-    items.push({ label, value });
+  if (lines[0]) {
+    values.profile_title = lines[0];
   }
 
-  return { hashtags, items };
+  let code = '';
+
+  for (const line of lines) {
+    const codeMatch = line.match(/کد\s*:\s*([0-9۰-۹]+)/);
+    if (codeMatch) {
+      code = toNumericString(codeMatch[1]);
+      values.case_code = code;
+      continue;
+    }
+
+    if (line.startsWith('#') && !line.includes(':') && !line.includes('：')) {
+      const status = line.replace(/^#+/, '').trim();
+      if (normalizeText(status) === 'مجرد') {
+        values.marital_status = 'single';
+      } else {
+        values.marital_status = status;
+      }
+      continue;
+    }
+
+    const separator = line.includes(':') ? ':' : line.includes('：') ? '：' : null;
+    if (!separator) {
+      continue;
+    }
+
+    const [rawLabel, ...rest] = line.split(separator);
+    const label = normalizeText(rawLabel.replace(/^#+/, ''));
+    const value = rest.join(separator).trim();
+    const mappedKey = FIELD_LABEL_LOOKUP.get(label);
+
+    if (!mappedKey || !value) {
+      continue;
+    }
+
+    if (mappedKey === 'acceptable_spouse_age_from') {
+      const { from, to } = mapRangeValue(value);
+      values.acceptable_spouse_age_from = from;
+      values.acceptable_spouse_age_to = to;
+      continue;
+    }
+
+    values[mappedKey] = value;
+  }
+
+  if (!code && values.case_code) {
+    code = values.case_code;
+  }
+
+  return { values, code };
 }
 
-function CaseCreator({ onLogout }: { onLogout: () => Promise<void> }) {
+function toNullableInteger(value: string) {
+  const normalized = toNumericString(value);
+  return normalized ? Number(normalized) : null;
+}
+
+function CaseCreator({ userId, onLogout }: { userId: string; onLogout: () => Promise<void> }) {
   const [text, setText] = useState(sampleCaseText);
-  const [result, setResult] = useState<ParsedCase | null>(null);
+  const [parsedValues, setParsedValues] = useState<CaseFormValues | null>(null);
+  const [sending, setSending] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
 
   function handleProcess() {
-    setResult(parseCaseText(text));
+    const result = parseCaseText(text);
+    setParsedValues(result.values);
+    setMessage(result.code ? `Case ${result.code} processed.` : 'Case processed.');
   }
 
   function handleClear() {
     setText('');
-    setResult(null);
+    setParsedValues(null);
+    setMessage(null);
+  }
+
+  async function handleSendToSystem() {
+    if (!parsedValues) {
+      setMessage('First click پردازش to parse the case.');
+      return;
+    }
+
+    setSending(true);
+    setMessage(null);
+
+    try {
+      if (!supabase) {
+        throw new Error('Supabase is not configured.');
+      }
+
+      const payload = {
+        profile_title: parsedValues.profile_title || null,
+        case_code: toNullableInteger(parsedValues.case_code),
+        marital_status: parsedValues.marital_status || null,
+        age: toNullableInteger(parsedValues.age),
+        birth_month_year: parsedValues.birth_month_year || null,
+        education: parsedValues.education || null,
+        clothing_and_religiosity: parsedValues.clothing_and_religiosity || null,
+        satellite_view: parsedValues.satellite_view || null,
+        height_cm: toNullableInteger(parsedValues.height_cm),
+        weight_kg: toNullableInteger(parsedValues.weight_kg),
+        skin_color: parsedValues.skin_color || null,
+        birth_city: parsedValues.birth_city || null,
+        residence_city: parsedValues.residence_city || null,
+        parents_birth_place: parsedValues.parents_birth_place || null,
+        parents_education: parsedValues.parents_education || null,
+        father_job_and_financial_status: parsedValues.father_job_and_financial_status || null,
+        siblings_count: parsedValues.siblings_count || null,
+        birth_order: parsedValues.birth_order || null,
+        previous_marriage_and_children: parsedValues.previous_marriage_and_children || null,
+        personality_traits: parsedValues.personality_traits || null,
+        future_spouse_criteria: parsedValues.future_spouse_criteria || null,
+        accepts_other_cities_and_villages: parsedValues.accepts_other_cities_and_villages || null,
+        acceptable_spouse_age_from: toNullableInteger(parsedValues.acceptable_spouse_age_from),
+        acceptable_spouse_age_to: toNullableInteger(parsedValues.acceptable_spouse_age_to),
+        raw_text: text.trim(),
+        created_by: userId,
+      };
+
+      const { error } = await supabase.from(CASE_TABLE_NAME).insert(payload);
+
+      if (error) {
+        throw error;
+      }
+
+      setMessage('Case was sent to Supabase successfully.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Failed to send the case.');
+    } finally {
+      setSending(false);
+    }
   }
 
   async function handleLogout() {
     setBusy(true);
+    setMessage(null);
     try {
       await onLogout();
     } finally {
@@ -104,65 +347,91 @@ function CaseCreator({ onLogout }: { onLogout: () => Promise<void> }) {
     <div className="card stack">
       <div className="profile-block">
         <div>
-          <p className="label">ابزار</p>
-          <h2 className="card-title">ثبت کیس جدید</h2>
+          <p className="label">tool</p>
+          <h2 className="card-title">new case intake</h2>
         </div>
         <Link className="ghost-link ghost-button" to="/admin">
-          بازگشت به داشبورد
+          back to dashboard
         </Link>
       </div>
 
       <div className="field">
-        <label htmlFor="case-text">متن کیس</label>
+        <label htmlFor="case-text">case template</label>
         <textarea
           id="case-text"
           className="case-textarea"
           value={text}
           onChange={(event) => setText(event.target.value)}
-          placeholder="متن را اینجا قرار دهید..."
+          placeholder="Paste the marriage case template here..."
         />
       </div>
 
       <div className="admin-actions">
-        <button className="button" type="button" onClick={handleProcess} disabled={busy || !text.trim()}>
+        <button className="button" type="button" onClick={handleProcess} disabled={busy || sending || !text.trim()}>
           پردازش
         </button>
-        <button className="button button-secondary" type="button" onClick={handleClear} disabled={busy}>
-          پاک کردن
+        <button className="button button-secondary" type="button" onClick={handleClear} disabled={busy || sending}>
+          clear
         </button>
       </div>
 
-      <div className="result-block">
-        <p className="label">خروجی استخراج‌شده</p>
-        {result ? (
-          <div className="result-list">
-            <ResultGroup title="هشتگ‌ها" items={result.hashtags.map((item) => ({ label: '', value: item }))} />
-            <ResultGroup title="فیلدها" items={result.items} />
+      {parsedValues ? (
+        <div className="case-table-block">
+          <div className="result-block-header">
+            <p className="label">parsed fields</p>
+            <div className="notice case-note">You can edit the values below before sending them to Supabase.</div>
           </div>
-        ) : (
-          <div className="notice">برای نمایش نتیجه، روی دکمه «پردازش» بزنید.</div>
-        )}
-      </div>
 
-      <button className="button button-secondary" type="button" onClick={handleLogout} disabled={busy}>
+          <div className="case-table-wrap">
+            <table className="case-table">
+              <thead>
+                <tr>
+                  <th>english_field</th>
+                  <th>value</th>
+                </tr>
+              </thead>
+              <tbody>
+                {CASE_FIELD_DEFINITIONS.map((field) => (
+                  <tr key={field.key}>
+                    <td>{field.label}</td>
+                    <td>
+                      <input
+                        className="case-table-input"
+                        type="text"
+                        inputMode={field.key.includes('age') || field.key.endsWith('_cm') || field.key === 'case_code' ? 'numeric' : 'text'}
+                        value={parsedValues[field.key]}
+                        placeholder={field.placeholder}
+                        onChange={(event) =>
+                          setParsedValues((current) =>
+                            current
+                              ? {
+                                  ...current,
+                                  [field.key]: event.target.value,
+                                }
+                              : current
+                          )
+                        }
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="admin-actions">
+            <button className="button" type="button" onClick={handleSendToSystem} disabled={busy || sending}>
+              {sending ? 'sending...' : 'ارسال به سیستم'}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      <button className="button button-secondary" type="button" onClick={handleLogout} disabled={busy || sending}>
         {busy ? 'در حال خروج...' : 'خروج از حساب'}
       </button>
-    </div>
-  );
-}
 
-function ResultGroup({ title, items }: { title: string; items: ParsedItem[] }) {
-  return (
-    <div className="result-group">
-      <h3>{title}</h3>
-      <ul>
-        {items.map((item) => (
-          <li key={`${item.label}-${item.value}-${title}`}>
-            {item.label ? <strong>{item.label}</strong> : null}
-            <span>{item.value}</span>
-          </li>
-        ))}
-      </ul>
+      {message ? <div className="notice">{message}</div> : null}
     </div>
   );
 }
@@ -226,8 +495,8 @@ export function AdminPage() {
         <div className="card">
           <p>در حال بررسی وضعیت ورود...</p>
         </div>
-      ) : authenticated && isCasePage ? (
-        <CaseCreator onLogout={handleLogout} />
+      ) : user && isCasePage ? (
+        <CaseCreator userId={user.id} onLogout={handleLogout} />
       ) : authenticated ? (
         <div className="card stack">
           <div className="profile-block">
