@@ -45,57 +45,57 @@ type ParseResult = {
 const CASE_TABLE_NAME = 'marriage_cases';
 
 const CASE_FIELD_DEFINITIONS: CaseFieldDefinition[] = [
-  { key: 'profile_title', label: 'profile_title', placeholder: 'e.g. ❤️ #خانم_دهه_هفتاد_مجرد' },
-  { key: 'case_code', label: 'case_code', placeholder: 'e.g. 1687' },
-  { key: 'marital_status', label: 'marital_status', placeholder: 'e.g. single' },
-  { key: 'age', label: 'age', placeholder: 'e.g. 25' },
-  { key: 'birth_month_year', label: 'birth_month_year', placeholder: 'e.g. Azar 1379' },
-  { key: 'education', label: 'education', placeholder: 'e.g. master student' },
-  { key: 'clothing_and_religiosity', label: 'clothing_and_religiosity', placeholder: 'e.g. modest manteau, medium religiosity' },
-  { key: 'satellite_view', label: 'satellite_view', placeholder: 'e.g. opposed' },
-  { key: 'height_cm', label: 'height_cm', placeholder: 'e.g. 160' },
-  { key: 'weight_kg', label: 'weight_kg', placeholder: 'e.g. 56' },
-  { key: 'skin_color', label: 'skin_color', placeholder: 'e.g. wheatish' },
-  { key: 'birth_city', label: 'birth_city', placeholder: 'e.g. Kashan' },
-  { key: 'residence_city', label: 'residence_city', placeholder: 'e.g. Kashan' },
-  { key: 'parents_birth_place', label: 'parents_birth_place', placeholder: 'e.g. Kashan' },
-  { key: 'parents_education', label: 'parents_education', placeholder: 'e.g. below diploma' },
+  { key: 'profile_title', label: 'profile_title', placeholder: 'مثلا: ❤️ #خانم_دهه_هفتاد_مجرد' },
+  { key: 'case_code', label: 'case_code', placeholder: 'مثلا: 1687' },
+  { key: 'marital_status', label: 'marital_status', placeholder: 'مثلا: مجرد' },
+  { key: 'age', label: 'age', placeholder: 'مثلا: 25' },
+  { key: 'birth_month_year', label: 'birth_month_year', placeholder: 'مثلا: آذر ۱۳۷۹' },
+  { key: 'education', label: 'education', placeholder: 'مثلا: دانشجوی ارشد' },
+  { key: 'clothing_and_religiosity', label: 'clothing_and_religiosity', placeholder: 'مثلا: مانتویی محجوب و مذهبی متوسط' },
+  { key: 'satellite_view', label: 'satellite_view', placeholder: 'مثلا: مخالف' },
+  { key: 'height_cm', label: 'height_cm', placeholder: 'مثلا: 160' },
+  { key: 'weight_kg', label: 'weight_kg', placeholder: 'مثلا: 56' },
+  { key: 'skin_color', label: 'skin_color', placeholder: 'مثلا: گندمی' },
+  { key: 'birth_city', label: 'birth_city', placeholder: 'مثلا: کاشان' },
+  { key: 'residence_city', label: 'residence_city', placeholder: 'مثلا: کاشان' },
+  { key: 'parents_birth_place', label: 'parents_birth_place', placeholder: 'مثلا: کاشان' },
+  { key: 'parents_education', label: 'parents_education', placeholder: 'مثلا: زیر دیپلم' },
   {
     key: 'father_job_and_financial_status',
     label: 'father_job_and_financial_status',
-    placeholder: 'e.g. retired, medium financial status',
+    placeholder: 'مثلا: بازنشسته آزاد، سطح متوسط',
   },
-  { key: 'siblings_count', label: 'siblings_count', placeholder: 'e.g. 3 brothers' },
-  { key: 'birth_order', label: 'birth_order', placeholder: 'e.g. 4th' },
+  { key: 'siblings_count', label: 'siblings_count', placeholder: 'مثلا: ۳ برادر' },
+  { key: 'birth_order', label: 'birth_order', placeholder: 'مثلا: چهارم' },
   {
     key: 'previous_marriage_and_children',
     label: 'previous_marriage_and_children',
-    placeholder: 'e.g. none',
+    placeholder: 'مثلا: ----',
   },
   {
     key: 'personality_traits',
     label: 'personality_traits',
-    placeholder: 'e.g. committed, outgoing, respectful',
+    placeholder: 'مثلا: مقید، برونگرا، محترم',
   },
   {
     key: 'future_spouse_criteria',
     label: 'future_spouse_criteria',
-    placeholder: 'e.g. religious, educated, social',
+    placeholder: 'مثلا: مذهبی، تحصیل‌کرده، اجتماعی',
   },
   {
     key: 'accepts_other_cities_and_villages',
     label: 'accepts_other_cities_and_villages',
-    placeholder: 'e.g. yes',
+    placeholder: 'مثلا: بله',
   },
   {
     key: 'acceptable_spouse_age_from',
     label: 'acceptable_spouse_age_from',
-    placeholder: 'e.g. 27',
+    placeholder: 'مثلا: 27',
   },
   {
     key: 'acceptable_spouse_age_to',
     label: 'acceptable_spouse_age_to',
-    placeholder: 'e.g. 33',
+    placeholder: 'مثلا: 33',
   },
 ];
 
@@ -267,7 +267,7 @@ function CaseCreator({ userId, onLogout }: { userId: string; onLogout: () => Pro
   function handleProcess() {
     const result = parseCaseText(text);
     setParsedValues(result.values);
-    setMessage(result.code ? `Case ${result.code} processed.` : 'Case processed.');
+    setMessage(result.code ? `پرونده ${result.code} پردازش شد.` : 'پرونده پردازش شد.');
   }
 
   function handleClear() {
@@ -287,7 +287,7 @@ function CaseCreator({ userId, onLogout }: { userId: string; onLogout: () => Pro
 
     try {
       if (!supabase) {
-        throw new Error('Supabase is not configured.');
+        throw new Error('Supabase تنظیم نشده است.');
       }
 
       const payload = {
@@ -325,9 +325,11 @@ function CaseCreator({ userId, onLogout }: { userId: string; onLogout: () => Pro
         throw error;
       }
 
-      setMessage('Case was sent to Supabase successfully.');
+      setText('');
+      setParsedValues(null);
+      setMessage('با موفقیت به سیستم ارسال شد.');
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to send the case.');
+      setMessage(error instanceof Error ? error.message : 'ارسال پرونده ناموفق بود.');
     } finally {
       setSending(false);
     }
@@ -347,22 +349,22 @@ function CaseCreator({ userId, onLogout }: { userId: string; onLogout: () => Pro
     <div className="card stack">
       <div className="profile-block">
         <div>
-          <p className="label">tool</p>
-          <h2 className="card-title">new case intake</h2>
+          <p className="label">ابزار</p>
+          <h2 className="card-title">ثبت پرونده جدید</h2>
         </div>
         <Link className="ghost-link ghost-button" to="/admin">
-          back to dashboard
+          بازگشت به داشبورد
         </Link>
       </div>
 
       <div className="field">
-        <label htmlFor="case-text">case template</label>
+        <label htmlFor="case-text">قالب پرونده</label>
         <textarea
           id="case-text"
           className="case-textarea"
           value={text}
           onChange={(event) => setText(event.target.value)}
-          placeholder="Paste the marriage case template here..."
+          placeholder="متن قالب پرونده را اینجا قرار دهید..."
         />
       </div>
 
@@ -371,23 +373,23 @@ function CaseCreator({ userId, onLogout }: { userId: string; onLogout: () => Pro
           پردازش
         </button>
         <button className="button button-secondary" type="button" onClick={handleClear} disabled={busy || sending}>
-          clear
+          پاک کردن
         </button>
       </div>
 
       {parsedValues ? (
         <div className="case-table-block">
           <div className="result-block-header">
-            <p className="label">parsed fields</p>
-            <div className="notice case-note">You can edit the values below before sending them to Supabase.</div>
+            <p className="label">فیلدهای استخراج‌شده</p>
+            <div className="notice case-note">می‌توانید مقادیر زیر را قبل از ارسال به سیستم ویرایش کنید.</div>
           </div>
 
           <div className="case-table-wrap">
             <table className="case-table">
               <thead>
                 <tr>
-                  <th>english_field</th>
-                  <th>value</th>
+                  <th>فیلد</th>
+                  <th>مقدار</th>
                 </tr>
               </thead>
               <tbody>
@@ -421,7 +423,7 @@ function CaseCreator({ userId, onLogout }: { userId: string; onLogout: () => Pro
 
           <div className="admin-actions">
             <button className="button" type="button" onClick={handleSendToSystem} disabled={busy || sending}>
-              {sending ? 'sending...' : 'ارسال به سیستم'}
+              {sending ? 'در حال ارسال...' : 'ارسال به سیستم'}
             </button>
           </div>
         </div>
