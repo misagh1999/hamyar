@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import type { MarriageCase } from '../lib/cases';
+import {
+  formatMarriageCaseValue,
+  getMarriageCaseFieldLabel,
+  type MarriageCase,
+} from '../lib/cases';
 
 export function HomePage() {
   const [cases, setCases] = useState<MarriageCase[]>([]);
@@ -53,7 +57,6 @@ export function HomePage() {
       <div className="hero-copy">
         <p className="eyebrow">پروژه همیار</p>
         <h1 className="title">همیار</h1>
-        <p className="subtitle">لیست کیس‌های ثبت‌شده از جدول `marriage_cases`.</p>
       </div>
 
       {loading ? <div className="notice">در حال دریافت کیس‌ها...</div> : null}
@@ -65,28 +68,30 @@ export function HomePage() {
         {cases.map((item) => (
           <Link key={item.id} className="case-card" to={`/cases/${item.case_code ?? item.id}`}>
             <div className="case-card-header">
-              <span className="case-pill">case #{item.case_code ?? '-'}</span>
-              <span className="case-pill case-pill-muted">{item.marital_status ?? '-'}</span>
+              <span className="case-pill">پرونده #{item.case_code ?? '-'}</span>
+              <span className="case-pill case-pill-muted">
+                {formatMarriageCaseValue('marital_status', item.marital_status)}
+              </span>
             </div>
 
             <h2>{item.profile_title ?? 'بدون عنوان'}</h2>
 
             <div className="case-meta">
               <div>
-                <span className="label">case_code</span>
-                <p>{item.case_code ?? '-'}</p>
+                <span className="label">{getMarriageCaseFieldLabel('case_code')}</span>
+                <p>{formatMarriageCaseValue('case_code', item.case_code)}</p>
               </div>
               <div>
-                <span className="label">marital_status</span>
-                <p>{item.marital_status ?? '-'}</p>
+                <span className="label">{getMarriageCaseFieldLabel('marital_status')}</span>
+                <p>{formatMarriageCaseValue('marital_status', item.marital_status)}</p>
               </div>
               <div>
-                <span className="label">profile_title</span>
-                <p>{item.profile_title ?? '-'}</p>
+                <span className="label">{getMarriageCaseFieldLabel('profile_title')}</span>
+                <p>{formatMarriageCaseValue('profile_title', item.profile_title)}</p>
               </div>
               <div>
-                <span className="label">age</span>
-                <p>{item.age ?? '-'}</p>
+                <span className="label">{getMarriageCaseFieldLabel('age')}</span>
+                <p>{formatMarriageCaseValue('age', item.age)}</p>
               </div>
             </div>
           </Link>
