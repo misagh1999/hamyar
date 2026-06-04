@@ -92,3 +92,8 @@ export const CASE_LIST_FIELDS: Array<{
   { key: 'profile_title', label: 'profile_title' },
   { key: 'age', label: 'age' },
 ];
+
+export type CaseDropdownOption = {
+  value: string;
+  label: string;
+};

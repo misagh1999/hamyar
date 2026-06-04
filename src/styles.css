@@ -154,6 +154,46 @@ button {
   gap: 8px;
 }
 
+.filters-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 12px;
+}
+
+.field-span-2 {
+  grid-column: 1 / -1;
+}
+
+.range-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.filter-control {
+  width: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 16px;
+  background: rgba(248, 250, 252, 0.95);
+  color: #0f172a;
+  padding: 14px 16px;
+  outline: none;
+}
+
+.filter-control:focus {
+  border-color: rgba(14, 165, 233, 0.7);
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.14);
+}
+
+.filter-control:disabled {
+  opacity: 0.75;
+}
+
 .case-grid {
   display: grid;
   gap: 14px;
@@ -549,6 +589,11 @@ button {
   }
 
   .case-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .filters-grid,
+  .range-grid {
     grid-template-columns: 1fr;
   }
 
