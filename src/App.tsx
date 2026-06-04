@@ -1,4 +1,4 @@
-import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { HashRouter, Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { CaseDetailPage } from './pages/CaseDetailPage';
 import { HomePage } from './pages/HomePage';
@@ -39,10 +39,10 @@ function Shell() {
 
 export function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <AuthProvider>
         <Shell />
       </AuthProvider>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
