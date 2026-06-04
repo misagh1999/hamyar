@@ -144,6 +144,96 @@ button {
   gap: 16px;
 }
 
+.hero-cases,
+.detail-page {
+  justify-content: flex-start;
+}
+
+.hero-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.case-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.case-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.05);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.case-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(14, 165, 233, 0.35);
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.09);
+}
+
+.case-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.case-card h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.4;
+}
+
+.case-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+}
+
+.case-meta p,
+.detail-item p {
+  margin: 4px 0 0;
+  word-break: break-word;
+}
+
+.case-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(14, 165, 233, 0.12);
+  color: #0369a1;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.case-pill-muted {
+  background: rgba(15, 23, 42, 0.08);
+  color: #334155;
+}
+
+.detail-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.detail-item {
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(248, 250, 252, 0.92);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+}
+
 .eyebrow,
 .label {
   margin: 0;
@@ -456,6 +546,10 @@ button {
   .hero,
   .admin-page {
     min-height: calc(100vh - 56px);
+  }
+
+  .case-meta {
+    grid-template-columns: 1fr;
   }
 
   .case-table {

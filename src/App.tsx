@@ -1,5 +1,6 @@
 import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { CaseDetailPage } from './pages/CaseDetailPage';
 import { HomePage } from './pages/HomePage';
 import { AdminPage } from './pages/AdminPage';
 
@@ -21,6 +22,7 @@ function Shell() {
 
           <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route path="/cases/:caseCode" element={<CaseDetailPage />} />
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/admin/new-case" element={<AdminPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
