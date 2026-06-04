@@ -129,6 +129,12 @@ button {
   font-size: 0.95rem;
 }
 
+.ghost-button {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
 .hero,
 .admin-page {
   min-height: calc(100vh - 72px);
@@ -188,6 +194,18 @@ button {
   gap: 16px;
 }
 
+.admin-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.admin-link-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .field {
   display: grid;
   gap: 8px;
@@ -215,6 +233,31 @@ button {
 }
 
 .field input:focus {
+  border-color: rgba(14, 165, 233, 0.7);
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.14);
+}
+
+.case-textarea {
+  width: 100%;
+  min-height: 320px;
+  resize: vertical;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 16px;
+  background: rgba(248, 250, 252, 0.95);
+  color: #0f172a;
+  padding: 14px 16px;
+  outline: none;
+  direction: rtl;
+  text-align: right;
+  font: inherit;
+  line-height: 1.9;
+}
+
+.case-textarea::placeholder {
+  color: #94a3b8;
+}
+
+.case-textarea:focus {
   border-color: rgba(14, 165, 233, 0.7);
   box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.14);
 }
@@ -281,6 +324,51 @@ button {
 
 .info-item p {
   margin: 6px 0 0;
+  word-break: break-word;
+}
+
+.result-block {
+  display: grid;
+  gap: 12px;
+}
+
+.result-list {
+  display: grid;
+  gap: 12px;
+}
+
+.result-group {
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 18px;
+  background: rgba(248, 250, 252, 0.9);
+  padding: 14px;
+}
+
+.result-group h3 {
+  margin: 0 0 10px;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.result-group ul {
+  margin: 0;
+  padding: 0 18px 0 0;
+  display: grid;
+  gap: 10px;
+}
+
+.result-group li {
+  display: grid;
+  gap: 4px;
+}
+
+.result-group strong {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.result-group span {
+  color: #334155;
   word-break: break-word;
 }
 
