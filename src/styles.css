@@ -82,7 +82,8 @@ a {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -181,8 +182,19 @@ button {
   border-radius: 16px;
   background: rgba(248, 250, 252, 0.95);
   color: #0f172a;
+  font-family:
+    Hamyar,
+    Tahoma,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
   padding: 14px 16px;
   outline: none;
+}
+
+.filter-control select {
+  appearance: auto;
 }
 
 .filter-control:focus {
