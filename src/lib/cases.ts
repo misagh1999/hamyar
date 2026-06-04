@@ -97,3 +97,53 @@ export type CaseDropdownOption = {
   value: string;
   label: string;
 };
+
+export type MarriageCaseFieldKey = keyof Omit<
+  MarriageCase,
+  'id' | 'created_by' | 'created_at' | 'updated_at'
+>;
+
+export type MarriageCaseFieldDefinition = {
+  key: MarriageCaseFieldKey;
+  label: string;
+  inputType: 'text' | 'number' | 'textarea' | 'select';
+  placeholder?: string;
+  options?: Array<{ value: string; label: string }>;
+};
+
+export const MARITAL_STATUS_OPTIONS = [
+  { value: 'single', label: 'مجرد' },
+  { value: 'married', label: 'متاهل' },
+];
+
+export const CASE_EDITABLE_FIELDS: MarriageCaseFieldDefinition[] = [
+  { key: 'profile_title', label: 'عنوان پرونده', inputType: 'text', placeholder: 'مثلا: ❤️ #خانم_دهه_هفتاد_مجرد' },
+  { key: 'case_code', label: 'کد', inputType: 'number', placeholder: '1687' },
+  { key: 'marital_status', label: 'وضعیت تاهل', inputType: 'select', options: MARITAL_STATUS_OPTIONS },
+  { key: 'age', label: 'سن', inputType: 'number', placeholder: '25' },
+  { key: 'birth_month_year', label: 'ماه و سال تولد', inputType: 'text', placeholder: 'آذر ۱۳۷۹' },
+  { key: 'education', label: 'تحصیلات', inputType: 'text', placeholder: 'دانشجوی ارشد' },
+  { key: 'clothing_and_religiosity', label: 'نوع پوشش و میزان اعتقادات', inputType: 'text' },
+  { key: 'satellite_view', label: 'نظرتون در مورد ماهواره', inputType: 'text' },
+  { key: 'height_cm', label: 'قد', inputType: 'number', placeholder: '160' },
+  { key: 'weight_kg', label: 'وزن', inputType: 'number', placeholder: '56' },
+  { key: 'skin_color', label: 'رنگ پوست', inputType: 'text' },
+  { key: 'birth_city', label: 'شهر محل تولد', inputType: 'text' },
+  { key: 'residence_city', label: 'شهر محل سکونت', inputType: 'text' },
+  { key: 'parents_birth_place', label: 'محل تولد والدین', inputType: 'text' },
+  { key: 'parents_education', label: 'میزان تحصیلات والدین', inputType: 'text' },
+  { key: 'father_job_and_financial_status', label: 'شغل پدر و سطح مالی خانواده', inputType: 'text' },
+  { key: 'siblings_count', label: 'تعداد خواهر و برادر', inputType: 'text' },
+  { key: 'birth_order', label: 'فرزند چندم', inputType: 'text' },
+  { key: 'previous_marriage_and_children', label: 'توضیحات ازدواج قبلی و فرزند', inputType: 'textarea' },
+  { key: 'personality_traits', label: 'مشخصات اخلاقی و رفتاری', inputType: 'textarea' },
+  { key: 'future_spouse_criteria', label: 'معیار همسر آینده', inputType: 'textarea' },
+  {
+    key: 'accepts_other_cities_and_villages',
+    label: 'پذیرش شهرهای دیگر',
+    inputType: 'text',
+  },
+  { key: 'acceptable_spouse_age_from', label: 'سن همسر از', inputType: 'number', placeholder: '27' },
+  { key: 'acceptable_spouse_age_to', label: 'سن همسر تا', inputType: 'number', placeholder: '33' },
+  { key: 'raw_text', label: 'متن خام', inputType: 'textarea' },
+];

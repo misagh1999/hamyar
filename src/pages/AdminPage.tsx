@@ -519,6 +519,9 @@ export function AdminPage() {
           </div>
 
           <div className="admin-actions">
+            <Link className="button button-secondary admin-link-button" to="/admin/cases">
+              مدیریت کیس ها
+            </Link>
             <Link className="button button-secondary admin-link-button" to="/admin/new-case">
               ثبت کیس جدید
             </Link>

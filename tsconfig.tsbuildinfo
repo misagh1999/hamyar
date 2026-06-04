@@ -1,1 +1,1 @@
-{"root":["./src/App.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/context/AuthContext.tsx","./src/lib/cases.ts","./src/lib/supabase.ts","./src/pages/AdminPage.tsx","./src/pages/CaseDetailPage.tsx","./src/pages/HomePage.tsx"],"version":"5.9.3"}
+{"root":["./src/App.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/context/AuthContext.tsx","./src/lib/cases.ts","./src/lib/supabase.ts","./src/pages/AdminCaseEditPage.tsx","./src/pages/AdminCasesPage.tsx","./src/pages/AdminPage.tsx","./src/pages/CaseDetailPage.tsx","./src/pages/HomePage.tsx"],"version":"5.9.3"}
