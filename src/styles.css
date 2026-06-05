@@ -484,6 +484,11 @@ button {
   white-space: nowrap;
 }
 
+.status-pill-muted {
+  background: rgba(148, 163, 184, 0.14);
+  color: #475569;
+}
+
 .info-grid {
   display: grid;
   gap: 12px;
@@ -499,6 +504,114 @@ button {
 .info-item p {
   margin: 6px 0 0;
   word-break: break-word;
+}
+
+.monitor-page {
+  gap: 14px;
+}
+
+.monitor-summary {
+  display: grid;
+  gap: 16px;
+}
+
+.monitor-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.monitor-hint {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.18);
+  color: #1e293b;
+  line-height: 1.8;
+}
+
+.monitor-log-card {
+  display: grid;
+  gap: 14px;
+}
+
+.monitor-log {
+  max-height: min(60vh, 560px);
+  overflow: auto;
+  display: grid;
+  gap: 10px;
+  padding-left: 4px;
+  scrollbar-gutter: stable;
+}
+
+.monitor-message {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(248, 250, 252, 0.94);
+}
+
+.monitor-message-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: #475569;
+  font-size: 0.84rem;
+}
+
+.monitor-message p {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.8;
+}
+
+.monitor-debug-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.monitor-debug-meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  color: #334155;
+  font-size: 0.86rem;
+}
+
+.monitor-debug-pre {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  color: #0f172a;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 260px;
+  overflow: auto;
+  direction: ltr;
+  text-align: left;
+}
+
+.monitor-debug-pre-html {
+  max-height: 180px;
+}
+
+.monitor-debug-label {
+  margin: 0;
+  color: #475569;
+  font-size: 0.88rem;
+}
+
+.monitor-message code,
+.monitor-hint code {
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.45rem;
+  background: rgba(15, 23, 42, 0.08);
 }
 
 .result-block {
@@ -643,6 +756,15 @@ button {
 
   .edit-form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .monitor-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .monitor-debug-meta {
+    flex-direction: column;
+    gap: 4px;
   }
 
   .case-table {

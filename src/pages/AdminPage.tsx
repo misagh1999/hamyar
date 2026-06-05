@@ -527,6 +527,9 @@ export function AdminPage() {
             <Link className="button button-secondary admin-link-button" to="/admin/new-case">
               ثبت کیس جدید
             </Link>
+            <Link className="button button-secondary admin-link-button" to="/admin/eitaa?autostart=1">
+              فراخوانی خودکار
+            </Link>
             <button className="button button-secondary" type="button" onClick={handleLogout} disabled={submitting}>
               {submitting ? 'در حال خروج...' : 'خروج از حساب'}
             </button>

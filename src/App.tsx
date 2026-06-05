@@ -5,6 +5,7 @@ import { HomePage } from './pages/HomePage';
 import { AdminPage } from './pages/AdminPage';
 import { AdminCasesPage } from './pages/AdminCasesPage';
 import { AdminCaseEditPage } from './pages/AdminCaseEditPage';
+import { EitaaMonitorPage } from './pages/EitaaMonitorPage';
 
 function Shell() {
   const location = useLocation();
@@ -26,6 +27,7 @@ function Shell() {
             <Route path="/" element={<HomePage />} />
             <Route path="/cases/:caseCode" element={<CaseDetailPage />} />
             <Route path="/admin" element={<AdminPage />} />
+            <Route path="/admin/eitaa" element={<EitaaMonitorPage />} />
             <Route path="/admin/cases" element={<AdminCasesPage />} />
             <Route path="/admin/cases/:caseCode" element={<AdminCaseEditPage />} />
             <Route path="/admin/new-case" element={<AdminPage />} />
