@@ -5,6 +5,7 @@ import {
   EITAA_MONITOR_API_BASE,
   buildEitaaMonitorUrl,
   fetchEitaaMonitorStatus,
+  resetEitaaMonitor,
   startEitaaMonitor,
   stopEitaaMonitor,
   type EitaaMonitorMessage,
@@ -96,30 +97,39 @@ export function EitaaMonitorPage() {
       }
     }
 
-    void syncStatus().then(() => {
-      if (!active) return;
-      attachStream();
-    });
-
     if (autoStart) {
       void (async () => {
         try {
           setBusy(true);
+          setLoading(true);
+          setStreamError(null);
+          setStatus(null);
+          setMessages([]);
           setMessage('در حال شروع مانیتور...');
+          await resetEitaaMonitor();
+          if (!active) return;
+          attachStream();
           const current = await startEitaaMonitor();
           if (!active) return;
           setStatus(current);
           setMessages(toMessageList(current.recentMessages));
           setMessage('مانیتور با موفقیت شروع شد.');
+          setLoading(false);
         } catch (error) {
           if (!active) return;
           setMessage(error instanceof Error ? error.message : 'شروع مانیتور ناموفق بود.');
+          setLoading(false);
         } finally {
           if (active) {
             setBusy(false);
           }
         }
       })();
+    } else {
+      void syncStatus().then(() => {
+        if (!active) return;
+        attachStream();
+      });
     }
 
     return () => {

@@ -231,6 +231,34 @@ function buildStatus() {
   };
 }
 
+function resetMonitorHistory() {
+  messageStore.length = 0;
+  seenMessageKeys.clear();
+  lastDiscoveredAt = null;
+  lastScan = {
+    when: null,
+    candidateCount: 0,
+    visibleCount: 0,
+    fallbackCount: 0,
+    scrollTop: 0,
+    maxScrollTop: 0,
+    pageTitle: '',
+    pageUrl: '',
+    note: 'cleared',
+  };
+  lastPageSnapshot = {
+    when: null,
+    pageTitle: '',
+    pageUrl: '',
+    bodyText: '',
+    bodyHtml: '',
+    totalElements: 0,
+    messageSelectorCount: 0,
+    scrollContainerCount: 0,
+    note: 'cleared',
+  };
+}
+
 function sendJson(res, statusCode, payload) {
   const body = JSON.stringify(payload);
   res.writeHead(statusCode, {
@@ -923,6 +951,20 @@ const server = http.createServer(async (req, res) => {
     } catch (error) {
       sendJson(res, 500, {
         error: error instanceof Error ? error.message : 'Failed to start monitor.',
+      });
+    }
+
+    return;
+  }
+
+  if (req.method === 'POST' && requestUrl.pathname === '/api/eitaa/reset') {
+    try {
+      resetMonitorHistory();
+      broadcastStatus();
+      sendJson(res, 200, buildStatus());
+    } catch (error) {
+      sendJson(res, 500, {
+        error: error instanceof Error ? error.message : 'Failed to reset monitor state.',
       });
     }
 

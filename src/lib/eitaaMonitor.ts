@@ -83,6 +83,14 @@ export async function startEitaaMonitor() {
   return parseJsonResponse<EitaaMonitorStatus>(response);
 }
 
+export async function resetEitaaMonitor() {
+  const response = await fetch(buildEitaaMonitorUrl('/api/eitaa/reset'), {
+    method: 'POST',
+  });
+
+  return parseJsonResponse<EitaaMonitorStatus>(response);
+}
+
 export async function stopEitaaMonitor() {
   const response = await fetch(buildEitaaMonitorUrl('/api/eitaa/stop'), {
     method: 'POST',
