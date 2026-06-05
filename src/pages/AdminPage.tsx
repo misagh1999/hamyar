@@ -1,6 +1,7 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { formatMarriageCaseValue } from '../lib/cases';
 import { supabase } from '../lib/supabase';
 
 type CaseFieldKey =
@@ -257,12 +258,36 @@ function toNullableInteger(value: string) {
   return normalized ? Number(normalized) : null;
 }
 
-function CaseCreator({ userId, onLogout }: { userId: string; onLogout: () => Promise<void> }) {
-  const [text, setText] = useState(sampleCaseText);
+function buildEditorUrl(text: string) {
+  const base = `${window.location.origin}${import.meta.env.BASE_URL || '/'}`;
+  return `${base}#/admin/new-case?text=${encodeURIComponent(text)}`;
+}
+
+function CaseCreator({
+  userId,
+  onLogout,
+  initialText,
+}: {
+  userId: string;
+  onLogout: () => Promise<void>;
+  initialText?: string | null;
+}) {
+  const [text, setText] = useState(initialText?.trim() ? initialText : sampleCaseText);
   const [parsedValues, setParsedValues] = useState<CaseFormValues | null>(null);
   const [sending, setSending] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!initialText?.trim()) {
+      return;
+    }
+
+    setText(initialText);
+    const result = parseCaseText(initialText);
+    setParsedValues(result.values);
+    setMessage(result.code ? `پرونده ${result.code} از Eitaa بارگذاری شد.` : 'پیش‌نمایش Eitaa بارگذاری شد.');
+  }, [initialText]);
 
   function handleProcess() {
     const result = parseCaseText(text);
@@ -368,6 +393,8 @@ function CaseCreator({ userId, onLogout }: { userId: string; onLogout: () => Pro
         />
       </div>
 
+      {initialText?.trim() ? <div className="notice">این پرونده از پیام Eitaa بارگذاری شده است.</div> : null}
+
       <div className="admin-actions">
         <button className="button" type="button" onClick={handleProcess} disabled={busy || sending || !text.trim()}>
           پردازش
@@ -433,7 +460,51 @@ function CaseCreator({ userId, onLogout }: { userId: string; onLogout: () => Pro
         {busy ? 'در حال خروج...' : 'خروج از حساب'}
       </button>
 
-      {message ? <div className="notice">{message}</div> : null}
+  {message ? <div className="notice">{message}</div> : null}
+    </div>
+  );
+}
+
+function CasePreview({
+  text,
+  onOpenEditor,
+}: {
+  text: string;
+  onOpenEditor: () => void;
+}) {
+  const parsed = useMemo(() => parseCaseText(text), [text]);
+  const filledFields = CASE_FIELD_DEFINITIONS.filter((field) => parsed.values[field.key].trim());
+
+  return (
+    <div className="card stack">
+      <div className="profile-block">
+        <div>
+          <p className="label">پیش‌نمایش</p>
+          <h2 className="card-title">{parsed.values.profile_title || 'پرونده تشخیص داده شده'}</h2>
+        </div>
+        <span className="status-pill">{parsed.code ? `کد ${parsed.code}` : 'بدون کد'}</span>
+      </div>
+
+      <div className="monitor-hint">
+        این نما فقط برای بررسی سریع جزئیات پیام است. اگر بخواهید می‌توانید بعداً آن را در ویرایشگر کامل باز کنید.
+      </div>
+
+      <div className="monitor-candidate-grid">
+        {filledFields.map((field) => (
+          <article key={field.key} className="monitor-candidate">
+            <div className="monitor-candidate-meta">
+              <span>{field.label}</span>
+            </div>
+            <p>{formatMarriageCaseValue(field.key, parsed.values[field.key])}</p>
+          </article>
+        ))}
+      </div>
+
+      <div className="admin-actions">
+        <button className="button button-secondary" type="button" onClick={onOpenEditor}>
+          باز کردن در ویرایشگر کامل
+        </button>
+      </div>
     </div>
   );
 }
@@ -448,6 +519,9 @@ export function AdminPage() {
 
   const authenticated = Boolean(user);
   const isCasePage = location.pathname === '/admin/new-case';
+  const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const initialText = searchParams.get('text');
+  const isPreviewMode = searchParams.get('preview') === '1';
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -497,8 +571,19 @@ export function AdminPage() {
         <div className="card">
           <p>در حال بررسی وضعیت ورود...</p>
         </div>
+      ) : user && isCasePage && isPreviewMode ? (
+        <CasePreview
+          text={initialText || ''}
+          onOpenEditor={() => {
+            if (!initialText) {
+              return;
+            }
+
+            window.open(buildEditorUrl(initialText), '_blank', 'noopener,noreferrer');
+          }}
+        />
       ) : user && isCasePage ? (
-        <CaseCreator userId={user.id} onLogout={handleLogout} />
+        <CaseCreator userId={user.id} onLogout={handleLogout} initialText={initialText} />
       ) : authenticated ? (
         <div className="card stack">
           <div className="profile-block">

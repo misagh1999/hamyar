@@ -5,6 +5,13 @@ export type EitaaMonitorMessage = {
   time: string;
   visible: boolean;
   discoveredAt: string;
+  casePreview?: {
+    fieldCount: number;
+    code: string;
+    title: string;
+    matchedFields: string[];
+    values: Record<string, string>;
+  } | null;
 };
 
 export type EitaaMonitorStatus = {

@@ -535,6 +535,48 @@ button {
   gap: 14px;
 }
 
+.monitor-candidate-card {
+  display: grid;
+  gap: 14px;
+}
+
+.monitor-candidate-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.monitor-candidate {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(14, 165, 233, 0.18);
+  background: linear-gradient(180deg, rgba(240, 249, 255, 0.96), rgba(248, 250, 252, 0.96));
+}
+
+.monitor-candidate-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: #475569;
+  font-size: 0.84rem;
+}
+
+.monitor-candidate h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1rem;
+}
+
+.monitor-candidate p {
+  margin: 0;
+  color: #334155;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .monitor-log {
   max-height: min(60vh, 560px);
   overflow: auto;
@@ -551,6 +593,7 @@ button {
   border-radius: 18px;
   border: 1px solid rgba(148, 163, 184, 0.16);
   background: rgba(248, 250, 252, 0.94);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
 }
 
 .monitor-message-meta {
@@ -567,6 +610,37 @@ button {
   white-space: pre-wrap;
   word-break: break-word;
   line-height: 1.8;
+}
+
+.monitor-message-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.monitor-message-fields {
+  display: grid;
+  gap: 8px;
+}
+
+.monitor-message-field {
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.monitor-message-field span {
+  color: #475569;
+  font-size: 0.8rem;
+}
+
+.monitor-message-field p {
+  margin: 0;
+  color: #0f172a;
+  line-height: 1.7;
 }
 
 .monitor-debug-panel {

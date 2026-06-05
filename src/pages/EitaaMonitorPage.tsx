@@ -11,9 +11,30 @@ import {
   type EitaaMonitorMessage,
   type EitaaMonitorStatus,
 } from '../lib/eitaaMonitor';
+import { formatMarriageCaseValue, getMarriageCaseFieldLabel } from '../lib/cases';
 
 function toMessageList(messages: EitaaMonitorMessage[]) {
   return [...messages].sort((left, right) => left.discoveredAt.localeCompare(right.discoveredAt));
+}
+
+function buildNewCasePreviewUrl(text: string) {
+  const base = `${window.location.origin}${import.meta.env.BASE_URL || '/'}`;
+  return `${base}#/admin/new-case?preview=1&text=${encodeURIComponent(text)}`;
+}
+
+function getPreviewFields(message: EitaaMonitorMessage) {
+  const preview = message.casePreview;
+  if (!preview?.values) {
+    return [];
+  }
+
+  return Object.entries(preview.values)
+    .filter(([, value]) => Boolean(String(value || '').trim()))
+    .slice(0, 6)
+    .map(([key, value]) => ({
+      label: getMarriageCaseFieldLabel(key as Parameters<typeof getMarriageCaseFieldLabel>[0]),
+      value: formatMarriageCaseValue(key as Parameters<typeof getMarriageCaseFieldLabel>[0], value),
+    }));
 }
 
 export function EitaaMonitorPage() {
@@ -77,7 +98,7 @@ export function EitaaMonitorPage() {
 
           setMessages((current) => {
             const next = [...current.filter((item) => item.key !== payload.message.key), payload.message];
-            return next.slice(-300);
+            return next;
           });
         });
 
@@ -178,6 +199,7 @@ export function EitaaMonitorPage() {
   }
 
   const running = status?.running ?? false;
+  const caseCandidates = messages.filter((item) => (item.casePreview?.fieldCount ?? 0) >= 5);
 
   return (
     <section className="stack detail-page monitor-page">
@@ -327,15 +349,81 @@ export function EitaaMonitorPage() {
                 messages.map((item) => (
                   <article key={item.key} className="monitor-message">
                     <div className="monitor-message-meta">
-                      <span>{item.author || 'بدون فرستنده'}</span>
-                      <span>{item.time || item.discoveredAt}</span>
+                      <span>{item.casePreview?.title || item.author || 'بدون فرستنده'}</span>
+                      <span>{item.casePreview?.code ? `کد ${item.casePreview.code}` : item.time || item.discoveredAt}</span>
                     </div>
-                    <p>{item.text}</p>
+                    {item.casePreview ? (
+                      <>
+                        <div className="monitor-message-tags">
+                          <span className="case-pill case-pill-muted">{item.casePreview.fieldCount} فیلد</span>
+                          {item.casePreview.matchedFields.slice(0, 3).map((field) => (
+                            <span key={field} className="case-pill case-pill-muted">
+                              {field}
+                            </span>
+                          ))}
+                        </div>
+                        <div className="monitor-message-fields">
+                          {getPreviewFields(item).map((field) => (
+                            <div key={field.label} className="monitor-message-field">
+                              <span>{field.label}</span>
+                              <p>{field.value}</p>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="admin-actions">
+                          <a
+                            className="button button-secondary admin-link-button"
+                            href={buildNewCasePreviewUrl(item.text)}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            باز کردن جزئیات در تب جدید
+                          </a>
+                        </div>
+                      </>
+                    ) : (
+                      <p>{item.text.length > 240 ? `${item.text.slice(0, 240)}…` : item.text}</p>
+                    )}
                   </article>
                 ))
               )}
             </div>
           </div>
+
+          {caseCandidates.length ? (
+            <div className="card stack monitor-candidate-card">
+              <div className="profile-block">
+                <div>
+                  <p className="label">پرونده‌های احتمالی</p>
+                  <h2 className="card-title">پیام‌هایی با حداقل ۵ فیلد</h2>
+                </div>
+                <span className="case-pill case-pill-muted">{caseCandidates.length} مورد</span>
+              </div>
+
+              <div className="monitor-candidate-grid">
+                {caseCandidates.map((item) => (
+                  <article key={item.key} className="monitor-candidate">
+                    <div className="monitor-candidate-meta">
+                      <span>{item.casePreview?.code || 'بدون کد'}</span>
+                      <span>{item.casePreview?.fieldCount ?? 0} فیلد</span>
+                    </div>
+                    <h3>{item.casePreview?.title || item.author || 'پرونده احتمالی'}</h3>
+                    <p>{item.text.slice(0, 180)}{item.text.length > 180 ? '…' : ''}</p>
+                    <div className="admin-actions">
+                      <a
+                        className="button button-secondary admin-link-button"
+                        href={buildNewCasePreviewUrl(item.text)}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        باز کردن جزئیات در تب جدید
+                      </a>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           <div className="notice">
             API محلی: <code>{EITAA_MONITOR_API_BASE}</code>

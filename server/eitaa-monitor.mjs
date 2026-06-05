@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import puppeteer from 'puppeteer-core';
+import { countFilledMarriageCaseFields, parseMarriageCaseText } from '../shared/marriageCaseParser.js';
 
 function loadEnvFile(filePath, { override = false } = {}) {
   if (!fs.existsSync(filePath)) {
@@ -227,7 +228,7 @@ function buildStatus() {
     lastDiscoveredAt,
     lastScan,
     lastPageSnapshot,
-    recentMessages: messageStore.slice(-100),
+    recentMessages: messageStore.slice(),
   };
 }
 
@@ -306,6 +307,23 @@ function recordMessage(message) {
 
   broadcastMessage(message);
   return true;
+}
+
+function buildCasePreview(text) {
+  const parsed = parseMarriageCaseText(text);
+  const fieldCount = countFilledMarriageCaseFields(parsed.values);
+
+  if (fieldCount < 5) {
+    return null;
+  }
+
+  return {
+    fieldCount,
+    code: parsed.code || '',
+    title: parsed.values.profile_title || '',
+    matchedFields: parsed.matchedFields,
+    values: parsed.values,
+  };
 }
 
 async function connectBrowser() {
@@ -538,6 +556,26 @@ async function extractVisibleMessages() {
       return value.replace(/\s+/g, ' ').trim();
     }
 
+    function compactText(value) {
+      return cleanText(value).replace(/\s*\n\s*/g, ' ');
+    }
+
+    function preserveLineBreaks(value) {
+      return String(value || '')
+        .replace(/\r\n?/g, '\n')
+        .split('\n')
+        .map((line) => line.replace(/\s+/g, ' ').trim())
+        .filter(Boolean)
+        .join('\n')
+        .trim();
+    }
+
+    function getMessageText(element) {
+      const textContainer = messageTextSelector ? element.querySelector(messageTextSelector) : element;
+      const rawText = textContainer?.innerText || textContainer?.textContent || element.innerText || element.textContent || '';
+      return preserveLineBreaks(rawText);
+    }
+
     const container = getScrollContainer();
     const candidateElements = Array.from(container.querySelectorAll(selector));
     const picked = [];
@@ -551,8 +589,7 @@ async function extractVisibleMessages() {
         continue;
       }
 
-      const textContainer = messageTextSelector ? element.querySelector(messageTextSelector) : element;
-      const text = cleanText(textContainer?.textContent || element.innerText || element.textContent || '');
+      const text = getMessageText(element);
       if (text.length < 12) {
         continue;
       }
@@ -566,7 +603,7 @@ async function extractVisibleMessages() {
         element.getAttribute('data-mid') ||
         element.getAttribute('data-message') ||
         element.id ||
-        cleanText(`${authorElement?.textContent || ''}|${timeElement?.textContent || ''}|${text.slice(0, 160)}`);
+        compactText(`${authorElement?.textContent || ''}|${timeElement?.textContent || ''}|${text.slice(0, 160)}`);
 
       picked.push({
         key,
@@ -578,10 +615,10 @@ async function extractVisibleMessages() {
     }
 
     if (picked.length === 0) {
-      const rawText = (container.innerText || '').trim();
+      const rawText = preserveLineBreaks(container.innerText || container.textContent || '');
       const blocks = rawText
         .split(/\n{2,}/)
-        .map((block) => cleanText(block))
+        .map((block) => preserveLineBreaks(block))
         .filter((block) => block.length >= 20)
         .slice(0, 50);
 
@@ -748,11 +785,13 @@ async function captureTick() {
           : 'No candidate nodes matched the current selectors yet.',
     };
 
-    for (const item of snapshot.messages) {
-      const recorded = recordMessage({
-        ...item,
-        discoveredAt: nowIso(),
-      });
+  for (const item of snapshot.messages) {
+    const casePreview = buildCasePreview(item.text);
+    const recorded = recordMessage({
+      ...item,
+      casePreview,
+      discoveredAt: nowIso(),
+    });
 
       discoveredAny = discoveredAny || recorded;
     }
@@ -986,7 +1025,7 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === 'GET' && requestUrl.pathname === '/api/eitaa/messages') {
     sendJson(res, 200, {
-      messages: messageStore.slice(-100),
+      messages: messageStore.slice(),
     });
     return;
   }
