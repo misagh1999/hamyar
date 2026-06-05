@@ -14,6 +14,16 @@ export type EitaaMonitorMessage = {
   } | null;
 };
 
+export type EitaaMonitorCaseCandidate = EitaaMonitorMessage & {
+  casePreview: {
+    fieldCount: number;
+    code: string;
+    title: string;
+    matchedFields: string[];
+    values: Record<string, string>;
+  };
+};
+
 export type EitaaMonitorStatus = {
   running: boolean;
   phase: string;
@@ -46,6 +56,7 @@ export type EitaaMonitorStatus = {
     note: string;
   };
   recentMessages: EitaaMonitorMessage[];
+  recentCaseCandidates: EitaaMonitorCaseCandidate[];
 };
 
 const apiBase = import.meta.env.VITE_EITAA_MONITOR_API_URL?.trim() || 'http://127.0.0.1:4179';

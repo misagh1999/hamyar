@@ -73,7 +73,9 @@ const DEBUG_HTML_CHARS = Number(process.env.EITAA_DEBUG_HTML_CHARS || 3000);
 
 const clients = new Set();
 const messageStore = [];
+const caseCandidateStore = [];
 const seenMessageKeys = new Set();
+const seenCaseCandidateKeys = new Set();
 const tempProfileDirs = [];
 
 let browser = null;
@@ -227,14 +229,17 @@ function buildStatus() {
     traversalDirection,
     lastDiscoveredAt,
     lastScan,
-    lastPageSnapshot,
-    recentMessages: messageStore.slice(),
+  lastPageSnapshot,
+  recentMessages: messageStore.slice(),
+  recentCaseCandidates: caseCandidateStore.slice(),
   };
 }
 
 function resetMonitorHistory() {
   messageStore.length = 0;
+  caseCandidateStore.length = 0;
   seenMessageKeys.clear();
+  seenCaseCandidateKeys.clear();
   lastDiscoveredAt = null;
   lastScan = {
     when: null,
@@ -306,6 +311,20 @@ function recordMessage(message) {
   }
 
   broadcastMessage(message);
+  return true;
+}
+
+function recordCaseCandidate(message) {
+  if (!message.casePreview) {
+    return false;
+  }
+
+  if (seenCaseCandidateKeys.has(message.key)) {
+    return false;
+  }
+
+  seenCaseCandidateKeys.add(message.key);
+  caseCandidateStore.push(message);
   return true;
 }
 
@@ -793,8 +812,16 @@ async function captureTick() {
       discoveredAt: nowIso(),
     });
 
-      discoveredAny = discoveredAny || recorded;
+    if (casePreview) {
+      recordCaseCandidate({
+        ...item,
+        casePreview,
+        discoveredAt: nowIso(),
+      });
     }
+
+    discoveredAny = discoveredAny || recorded;
+  }
 
     if (snapshot.maxScrollTop <= 0) {
       break;

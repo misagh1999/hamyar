@@ -10,6 +10,7 @@ import {
   stopEitaaMonitor,
   type EitaaMonitorMessage,
   type EitaaMonitorStatus,
+  type EitaaMonitorCaseCandidate,
 } from '../lib/eitaaMonitor';
 import { formatMarriageCaseValue, getMarriageCaseFieldLabel } from '../lib/cases';
 
@@ -35,6 +36,10 @@ function getPreviewFields(message: EitaaMonitorMessage) {
       label: getMarriageCaseFieldLabel(key as Parameters<typeof getMarriageCaseFieldLabel>[0]),
       value: formatMarriageCaseValue(key as Parameters<typeof getMarriageCaseFieldLabel>[0], value),
     }));
+}
+
+function toCandidateList(candidates: EitaaMonitorCaseCandidate[]) {
+  return [...candidates].sort((left, right) => left.discoveredAt.localeCompare(right.discoveredAt));
 }
 
 export function EitaaMonitorPage() {
@@ -199,7 +204,7 @@ export function EitaaMonitorPage() {
   }
 
   const running = status?.running ?? false;
-  const caseCandidates = messages.filter((item) => (item.casePreview?.fieldCount ?? 0) >= 5);
+  const caseCandidates = toCandidateList(status?.recentCaseCandidates ?? []);
 
   return (
     <section className="stack detail-page monitor-page">
