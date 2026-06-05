@@ -46,7 +46,12 @@ loadEnvFile(path.join(process.cwd(), '.env.local'), { override: true });
 const PORT = Number(process.env.EITAA_MONITOR_PORT || 4179);
 const TARGET_URL = process.env.EITAA_TARGET_URL?.trim() || 'https://web.eitaa.com/#@Moarefe_Moshavere';
 const SCAN_INTERVAL_MS = Number(process.env.EITAA_SCAN_INTERVAL_MS || 2500);
-const SCROLL_STEP_PX = Number(process.env.EITAA_SCROLL_STEP_PX || 900);
+const FAST_SCAN_INTERVAL_MS = Number(process.env.EITAA_FAST_SCAN_INTERVAL_MS || 0);
+const NAVIGATION_SETTLE_MS = Number(process.env.EITAA_NAVIGATION_SETTLE_MS || 500);
+const BURST_SCROLL_STEPS = Number(process.env.EITAA_BURST_SCROLL_STEPS || 20);
+const BURST_STEP_DELAY_MS = Number(process.env.EITAA_BURST_STEP_DELAY_MS || 0);
+const PAGE_JUMP_STEPS = Number(process.env.EITAA_PAGE_JUMP_STEPS || 8);
+const PAGE_JUMP_DELAY_MS = Number(process.env.EITAA_PAGE_JUMP_DELAY_MS || 0);
 const MAX_MESSAGES = Number(process.env.EITAA_MAX_MESSAGES || 300);
 const HEADLESS = /^(1|true|yes)$/i.test(process.env.EITAA_HEADLESS || '');
 const REMOTE_DEBUGGING_URL = process.env.EITAA_REMOTE_DEBUGGING_URL?.trim() || '';
@@ -72,7 +77,6 @@ const tempProfileDirs = [];
 
 let browser = null;
 let page = null;
-let timer = null;
 let ownedBrowser = false;
 let running = false;
 let phase = 'idle';
@@ -81,6 +85,7 @@ let lastError = null;
 let lastDiscoveredAt = null;
 let traversalDirection = 'up';
 let busy = false;
+let tickTimer = null;
 let lastScan = {
   when: null,
   candidateCount: 0,
@@ -441,7 +446,7 @@ async function goToTargetPage() {
   const currentPage = await ensurePage();
   await currentPage.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await currentPage.bringToFront();
-  await wait(2500);
+  await wait(NAVIGATION_SETTLE_MS);
   await capturePageSnapshot('after navigation');
   await currentPage.evaluate(() => {
     const candidates = Array.from(document.querySelectorAll('body *')).filter((element) => {
@@ -574,7 +579,6 @@ async function extractVisibleMessages() {
       pageUrl: location.href || '',
     };
   }, {
-    scrollStep: SCROLL_STEP_PX,
     messageSelector: MESSAGE_SELECTOR,
     scrollContainerSelector: SCROLL_CONTAINER_SELECTOR,
     authorSelector: AUTHOR_SELECTOR,
@@ -586,8 +590,71 @@ async function extractVisibleMessages() {
 async function moveScrollPosition(direction) {
   const currentPage = await ensurePage();
 
+  const target = await currentPage.evaluate(() => {
+    const selector =
+      '[data-message-id], [data-mid], [data-message], [class*="message"], [class*="Message"], [class*="bubble"], [class*="Bubble"], [role="listitem"]';
+
+    function getScrollContainer() {
+      const candidates = Array.from(document.querySelectorAll('body *')).filter((element) => {
+        if (!(element instanceof HTMLElement)) {
+          return false;
+        }
+
+        const styles = window.getComputedStyle(element);
+        const scrollable = /(auto|scroll)/.test(styles.overflowY);
+        return scrollable && element.scrollHeight - element.clientHeight > 120;
+      });
+
+      return (
+        candidates.sort(
+          (left, right) =>
+            right.scrollHeight - right.clientHeight - (left.scrollHeight - left.clientHeight)
+        )[0] ||
+        document.scrollingElement ||
+        document.documentElement
+      );
+    }
+
+    const container = getScrollContainer();
+    const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
+    const currentTop = container.scrollTop || 0;
+    const rect = container.getBoundingClientRect();
+
+    return {
+      scrollTop: currentTop,
+      maxScrollTop,
+      atTop: currentTop <= 0,
+      atBottom: currentTop >= maxScrollTop,
+      hasTargetElements: Boolean(container.querySelector(selector)),
+      centerX: Math.max(0, Math.min(window.innerWidth - 1, rect.left + rect.width / 2)),
+      centerY: Math.max(0, Math.min(window.innerHeight - 1, rect.top + rect.height / 2)),
+    };
+  });
+
+  await currentPage.mouse.move(target.centerX, target.centerY);
+  await currentPage.mouse.click(target.centerX, target.centerY);
+
+  if (direction === 'up') {
+    await currentPage.keyboard.press('Home');
+
+    for (let index = 0; index < Math.max(1, PAGE_JUMP_STEPS); index += 1) {
+      await currentPage.keyboard.press('PageUp');
+      if (PAGE_JUMP_DELAY_MS > 0) {
+        await wait(PAGE_JUMP_DELAY_MS);
+      }
+    }
+  } else {
+    await currentPage.keyboard.press('End');
+
+    for (let index = 0; index < Math.max(1, PAGE_JUMP_STEPS); index += 1) {
+      await currentPage.keyboard.press('PageDown');
+      if (PAGE_JUMP_DELAY_MS > 0) {
+        await wait(PAGE_JUMP_DELAY_MS);
+      }
+    }
+  }
+
   return currentPage.evaluate((options) => {
-    const step = options.scrollStep;
     const selector =
       '[data-message-id], [data-mid], [data-message], [class*="message"], [class*="Message"], [class*="bubble"], [class*="Bubble"], [role="listitem"]';
 
@@ -616,72 +683,107 @@ async function moveScrollPosition(direction) {
     const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
     const currentTop = container.scrollTop || 0;
 
-    if (options.direction === 'up') {
-      container.scrollTop = Math.max(0, currentTop - step);
-    } else {
-      container.scrollTop = Math.min(maxScrollTop, currentTop + step);
-    }
-
     return {
-      scrollTop: container.scrollTop || 0,
+      scrollTop: currentTop,
       maxScrollTop,
-      atTop: container.scrollTop <= 0,
-      atBottom: container.scrollTop >= maxScrollTop,
+      atTop: currentTop <= 0,
+      atBottom: currentTop >= maxScrollTop,
       hasTargetElements: Boolean(container.querySelector(selector)),
     };
-  }, { scrollStep: SCROLL_STEP_PX, direction });
+  });
 }
 
 async function captureTick() {
   if (!running || !page || page.isClosed()) {
-    return;
+    return { discoveredAny: false, moved: false };
   }
 
-  await capturePageSnapshot('before scan');
-  const snapshot = await extractVisibleMessages();
-  lastScan = {
-    when: nowIso(),
-    candidateCount: snapshot.candidateCount,
-    visibleCount: snapshot.visibleCount,
-    fallbackCount: snapshot.fallbackCount,
-    scrollTop: snapshot.scrollTop,
-    maxScrollTop: snapshot.maxScrollTop,
-    pageTitle: snapshot.pageTitle,
-    pageUrl: snapshot.pageUrl,
-    note:
-      snapshot.candidateCount > 0
-        ? `Matched ${snapshot.candidateCount} candidate nodes.`
-        : 'No candidate nodes matched the current selectors yet.',
-  };
   let discoveredAny = false;
+  let movedAny = false;
+  let burstIterations = 0;
+  let snapshot = null;
 
-  for (const item of snapshot.messages) {
-    const recorded = recordMessage({
-      ...item,
-      discoveredAt: nowIso(),
-    });
+  while (burstIterations < Math.max(1, BURST_SCROLL_STEPS)) {
+    snapshot = await extractVisibleMessages();
+    lastScan = {
+      when: nowIso(),
+      candidateCount: snapshot.candidateCount,
+      visibleCount: snapshot.visibleCount,
+      fallbackCount: snapshot.fallbackCount,
+      scrollTop: snapshot.scrollTop,
+      maxScrollTop: snapshot.maxScrollTop,
+      pageTitle: snapshot.pageTitle,
+      pageUrl: snapshot.pageUrl,
+      note:
+        snapshot.candidateCount > 0
+          ? `Matched ${snapshot.candidateCount} candidate nodes.`
+          : 'No candidate nodes matched the current selectors yet.',
+    };
 
-    discoveredAny = discoveredAny || recorded;
+    for (const item of snapshot.messages) {
+      const recorded = recordMessage({
+        ...item,
+        discoveredAt: nowIso(),
+      });
+
+      discoveredAny = discoveredAny || recorded;
+    }
+
+    if (snapshot.maxScrollTop <= 0) {
+      break;
+    }
+
+    const previousScrollTop = snapshot.scrollTop;
+    const movement = await moveScrollPosition(traversalDirection);
+    const moved = movement.scrollTop !== previousScrollTop;
+    movedAny = movedAny || moved;
+
+    if (movement.atTop || movement.atBottom || !moved) {
+      traversalDirection = 'up';
+      break;
+    }
+
+    burstIterations += 1;
+    if (burstIterations < BURST_SCROLL_STEPS) {
+      await wait(BURST_STEP_DELAY_MS);
+    }
   }
 
-  if (snapshot.maxScrollTop <= 0) {
-    broadcastStatus();
+  broadcastStatus();
+  return { discoveredAny, moved: movedAny };
+}
+
+function clearTickTimer() {
+  if (tickTimer) {
+    clearTimeout(tickTimer);
+    tickTimer = null;
+  }
+}
+
+function scheduleNextTick(delayMs) {
+  if (!running || !page || page.isClosed()) {
     return;
   }
 
-  const movement = await moveScrollPosition(traversalDirection);
+  clearTickTimer();
+  tickTimer = setTimeout(() => {
+    tickTimer = null;
+    void captureTick()
+      .then((result) => {
+        if (!running) {
+          return;
+        }
 
-  if (movement.atTop) {
-    traversalDirection = 'down';
-  } else if (movement.atBottom) {
-    traversalDirection = 'up';
-  }
-
-  if (discoveredAny) {
-    broadcastStatus();
-  } else {
-    broadcastStatus();
-  }
+        const nextDelay = result.moved ? FAST_SCAN_INTERVAL_MS : SCAN_INTERVAL_MS;
+        scheduleNextTick(nextDelay);
+      })
+      .catch((error) => {
+        lastError = error instanceof Error ? error.message : 'Monitor tick failed.';
+        phase = 'error';
+        broadcastStatus();
+        broadcastLog(lastError);
+      });
+  }, Math.max(0, delayMs));
 }
 
 async function startMonitor() {
@@ -704,18 +806,8 @@ async function startMonitor() {
     );
     broadcastStatus();
 
-    if (timer) {
-      clearInterval(timer);
-    }
-
-    timer = setInterval(() => {
-      void captureTick().catch((error) => {
-        lastError = error instanceof Error ? error.message : 'Monitor tick failed.';
-        phase = 'error';
-        broadcastStatus();
-        broadcastLog(lastError);
-      });
-    }, SCAN_INTERVAL_MS);
+    clearTickTimer();
+    scheduleNextTick(0);
 
     return buildStatus();
   } catch (error) {
@@ -737,10 +829,7 @@ async function stopMonitor() {
   phase = 'stopping';
   broadcastStatus();
 
-  if (timer) {
-    clearInterval(timer);
-    timer = null;
-  }
+  clearTickTimer();
 
   if (page && !page.isClosed()) {
     await page.close().catch(() => {});
