@@ -8,6 +8,7 @@
     "dev:ui": "vite --host 0.0.0.0",
     "dev:monitor": "node server/eitaa-monitor.mjs",
     "build": "tsc -b && vite build",
+    "postbuild": "cp dist/index.html dist/404.html",
     "preview": "vite preview"
   },
   "dependencies": {
