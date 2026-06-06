@@ -191,6 +191,10 @@ function mapRangeValue(value: string) {
   return { from: match[1], to: match[2] };
 }
 
+function extractProfileTitle(line: string) {
+  return line.replace(/\s*کد\s*:\s*[0-9۰-۹٠-٩].*$/, '').trim();
+}
+
 function parseCaseText(text: string): ParseResult {
   const values = createEmptyCaseValues();
   const lines = text
@@ -199,7 +203,7 @@ function parseCaseText(text: string): ParseResult {
     .filter(Boolean);
 
   if (lines[0]) {
-    values.profile_title = lines[0];
+    values.profile_title = extractProfileTitle(lines[0]);
   }
 
   let code = '';
@@ -260,7 +264,7 @@ function toNullableInteger(value: string) {
 
 function buildEditorUrl(text: string) {
   const base = `${window.location.origin}${import.meta.env.BASE_URL || '/'}`;
-  return `${base}#/admin/new-case?text=${encodeURIComponent(text)}`;
+  return `${base}admin/new-case?text=${encodeURIComponent(text)}`;
 }
 
 function CaseCreator({

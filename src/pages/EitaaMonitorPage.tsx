@@ -20,7 +20,7 @@ function toMessageList(messages: EitaaMonitorMessage[]) {
 
 function buildNewCasePreviewUrl(text: string) {
   const base = `${window.location.origin}${import.meta.env.BASE_URL || '/'}`;
-  return `${base}#/admin/new-case?preview=1&text=${encodeURIComponent(text)}`;
+  return `${base}admin/new-case?preview=1&text=${encodeURIComponent(text)}`;
 }
 
 function getPreviewFields(message: EitaaMonitorMessage) {

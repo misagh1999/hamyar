@@ -91,6 +91,10 @@ function createEmptyValues() {
   }, {});
 }
 
+function extractProfileTitle(line) {
+  return line.replace(/\s*کد\s*:\s*[0-9۰-۹٠-٩].*$/, '').trim();
+}
+
 export function countFilledMarriageCaseFields(values) {
   return CASE_FIELD_KEYS.filter((key) => Boolean(String(values[key] || '').trim())).length;
 }
@@ -103,7 +107,7 @@ export function parseMarriageCaseText(text) {
     .filter(Boolean);
 
   if (lines[0]) {
-    values.profile_title = lines[0];
+    values.profile_title = extractProfileTitle(lines[0]);
   }
 
   let code = '';
