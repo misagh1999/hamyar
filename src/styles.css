@@ -546,6 +546,47 @@ button {
   gap: 14px;
 }
 
+.batch-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.batch-summary {
+  line-height: 1.9;
+}
+
+.batch-progress {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(14, 165, 233, 0.18);
+  background: rgba(240, 249, 255, 0.82);
+}
+
+.batch-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: #334155;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.batch-progress-track {
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.22);
+}
+
+.batch-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(135deg, #22c55e, #0ea5e9);
+  transition: width 0.22s ease;
+}
+
 .monitor-candidate-grid {
   display: grid;
   gap: 12px;
