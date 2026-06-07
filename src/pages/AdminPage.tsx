@@ -327,6 +327,10 @@ function toNullableInteger(value: string) {
   return normalized ? Number(normalized) : null;
 }
 
+function getCaseCodeValue(values: CaseFormValues) {
+  return toNullableInteger(values.case_code);
+}
+
 function buildEditorUrl(text: string) {
   const base = `${window.location.origin}${import.meta.env.BASE_URL || '/'}`;
   return `${base}admin/new-case?text=${encodeURIComponent(text)}`;
@@ -344,8 +348,13 @@ function CaseCreator({
   const [text, setText] = useState(initialText?.trim() ? initialText : sampleCaseText);
   const [parsedValues, setParsedValues] = useState<CaseFormValues | null>(null);
   const [sending, setSending] = useState(false);
+  const [checkingCaseCode, setCheckingCaseCode] = useState(false);
+  const [duplicateCaseCode, setDuplicateCaseCode] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  const currentCaseCode = parsedValues ? getCaseCodeValue(parsedValues) : null;
+  const hasDuplicateCaseCode = currentCaseCode !== null && duplicateCaseCode === currentCaseCode;
 
   useEffect(() => {
     if (!initialText?.trim()) {
@@ -355,19 +364,78 @@ function CaseCreator({
     setText(initialText);
     const result = parseCaseText(initialText);
     setParsedValues(result.values);
+    setDuplicateCaseCode(null);
     setMessage(result.code ? `پرونده ${result.code} از Eitaa بارگذاری شد.` : 'پیش‌نمایش Eitaa بارگذاری شد.');
   }, [initialText]);
 
-  function handleProcess() {
+  async function checkCaseCodeExists(caseCode: number) {
+    if (!supabase) {
+      throw new Error('Supabase تنظیم نشده است.');
+    }
+
+    const { data, error } = await supabase
+      .from(CASE_TABLE_NAME)
+      .select('id')
+      .eq('case_code', caseCode)
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    return Boolean(data);
+  }
+
+  async function handleProcess() {
     const result = parseCaseText(text);
     setParsedValues(result.values);
-    setMessage(result.code ? `پرونده ${result.code} پردازش شد.` : 'پرونده پردازش شد.');
+    setDuplicateCaseCode(null);
+
+    const caseCode = getCaseCodeValue(result.values);
+    if (caseCode === null) {
+      setMessage('پرونده پردازش شد. کد پرونده پیدا نشد.');
+      return;
+    }
+
+    setCheckingCaseCode(true);
+    try {
+      const exists = await checkCaseCodeExists(caseCode);
+      if (exists) {
+        setDuplicateCaseCode(caseCode);
+        setMessage(`کد پرونده ${caseCode} قبلا در سیستم ثبت شده است. امکان ارسال به سیستم وجود ندارد.`);
+        return;
+      }
+
+      setMessage(`پرونده ${caseCode} پردازش شد و این کد قبلا ثبت نشده است.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'بررسی تکراری بودن کد پرونده ناموفق بود.');
+    } finally {
+      setCheckingCaseCode(false);
+    }
   }
 
   function handleClear() {
     setText('');
     setParsedValues(null);
+    setDuplicateCaseCode(null);
     setMessage(null);
+  }
+
+  function handleParsedFieldChange(fieldKey: CaseFieldKey, value: string) {
+    setParsedValues((current) =>
+      current
+        ? {
+            ...current,
+            [fieldKey]: value,
+          }
+        : current
+    );
+
+    if (fieldKey === 'case_code') {
+      setDuplicateCaseCode(null);
+      setMessage(null);
+    }
   }
 
   async function handleSendToSystem() {
@@ -384,9 +452,19 @@ function CaseCreator({
         throw new Error('Supabase تنظیم نشده است.');
       }
 
+      const caseCode = getCaseCodeValue(parsedValues);
+      if (caseCode !== null) {
+        const exists = await checkCaseCodeExists(caseCode);
+        if (exists) {
+          setDuplicateCaseCode(caseCode);
+          setMessage(`کد پرونده ${caseCode} قبلا در سیستم ثبت شده است. امکان ارسال به سیستم وجود ندارد.`);
+          return;
+        }
+      }
+
       const payload = {
         profile_title: parsedValues.profile_title || null,
-        case_code: toNullableInteger(parsedValues.case_code),
+        case_code: caseCode,
         gender: parsedValues.gender || null,
         marital_status: parsedValues.marital_status || null,
         age: toNullableInteger(parsedValues.age),
@@ -426,6 +504,7 @@ function CaseCreator({
 
       setText('');
       setParsedValues(null);
+      setDuplicateCaseCode(null);
       setMessage('با موفقیت به سیستم ارسال شد.');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'ارسال پرونده ناموفق بود.');
@@ -470,8 +549,8 @@ function CaseCreator({
       {initialText?.trim() ? <div className="notice">این پرونده از پیام Eitaa بارگذاری شده است.</div> : null}
 
       <div className="admin-actions">
-        <button className="button" type="button" onClick={handleProcess} disabled={busy || sending || !text.trim()}>
-          پردازش
+        <button className="button" type="button" onClick={handleProcess} disabled={busy || sending || checkingCaseCode || !text.trim()}>
+          {checkingCaseCode ? 'در حال بررسی...' : 'پردازش'}
         </button>
         <button className="button button-secondary" type="button" onClick={handleClear} disabled={busy || sending}>
           پاک کردن
@@ -504,16 +583,7 @@ function CaseCreator({
                         inputMode={field.key.includes('age') || field.key.endsWith('_cm') || field.key === 'case_code' ? 'numeric' : 'text'}
                         value={parsedValues[field.key]}
                         placeholder={field.placeholder}
-                        onChange={(event) =>
-                          setParsedValues((current) =>
-                            current
-                              ? {
-                                  ...current,
-                                  [field.key]: event.target.value,
-                                }
-                              : current
-                          )
-                        }
+                        onChange={(event) => handleParsedFieldChange(field.key, event.target.value)}
                       />
                     </td>
                   </tr>
@@ -523,7 +593,7 @@ function CaseCreator({
           </div>
 
           <div className="admin-actions">
-            <button className="button" type="button" onClick={handleSendToSystem} disabled={busy || sending}>
+            <button className="button" type="button" onClick={handleSendToSystem} disabled={busy || sending || checkingCaseCode || hasDuplicateCaseCode}>
               {sending ? 'در حال ارسال...' : 'ارسال به سیستم'}
             </button>
           </div>
@@ -534,7 +604,7 @@ function CaseCreator({
         {busy ? 'در حال خروج...' : 'خروج از حساب'}
       </button>
 
-  {message ? <div className="notice">{message}</div> : null}
+      {message ? <div className={`notice ${hasDuplicateCaseCode ? 'notice-error' : ''}`}>{message}</div> : null}
     </div>
   );
 }

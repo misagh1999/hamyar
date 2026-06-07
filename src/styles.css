@@ -465,6 +465,12 @@ button {
   border-color: rgba(251, 191, 36, 0.42);
 }
 
+.notice-error {
+  background: rgba(254, 242, 242, 0.92);
+  border-color: rgba(248, 113, 113, 0.42);
+  color: #991b1b;
+}
+
 .profile-block {
   display: flex;
   justify-content: space-between;
