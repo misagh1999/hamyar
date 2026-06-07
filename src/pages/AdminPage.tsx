@@ -7,10 +7,15 @@ import { supabase } from '../lib/supabase';
 type CaseFieldKey =
   | 'profile_title'
   | 'case_code'
+  | 'gender'
   | 'marital_status'
   | 'age'
   | 'birth_month_year'
   | 'education'
+  | 'military_status'
+  | 'job'
+  | 'monthly_income'
+  | 'religiosity'
   | 'clothing_and_religiosity'
   | 'satellite_view'
   | 'height_cm'
@@ -49,10 +54,15 @@ const SHOW_EITAA_AUTO_CALL = /^(1|true|yes)$/i.test(import.meta.env.VITE_SHOW_EI
 const CASE_FIELD_DEFINITIONS: CaseFieldDefinition[] = [
   { key: 'profile_title', label: 'profile_title', placeholder: 'مثلا: ❤️ #خانم_دهه_هفتاد_مجرد' },
   { key: 'case_code', label: 'case_code', placeholder: 'مثلا: 1687' },
+  { key: 'gender', label: 'gender', placeholder: 'male / female' },
   { key: 'marital_status', label: 'marital_status', placeholder: 'مثلا: مجرد' },
   { key: 'age', label: 'age', placeholder: 'مثلا: 25' },
   { key: 'birth_month_year', label: 'birth_month_year', placeholder: 'مثلا: آذر ۱۳۷۹' },
   { key: 'education', label: 'education', placeholder: 'مثلا: دانشجوی ارشد' },
+  { key: 'military_status', label: 'military_status', placeholder: 'مثلا: پایان خدمت' },
+  { key: 'job', label: 'job', placeholder: 'مثلا: کارمند' },
+  { key: 'monthly_income', label: 'monthly_income', placeholder: 'مثلا: ۳۰ میلیون' },
+  { key: 'religiosity', label: 'religiosity', placeholder: 'مثلا: مذهبی متوسط' },
   { key: 'clothing_and_religiosity', label: 'clothing_and_religiosity', placeholder: 'مثلا: مانتویی محجوب و مذهبی متوسط' },
   { key: 'satellite_view', label: 'satellite_view', placeholder: 'مثلا: مخالف' },
   { key: 'height_cm', label: 'height_cm', placeholder: 'مثلا: 160' },
@@ -102,9 +112,14 @@ const CASE_FIELD_DEFINITIONS: CaseFieldDefinition[] = [
 ];
 
 const FIELD_LABEL_LOOKUP = new Map<string, CaseFieldKey>([
+  ['مجرد یا مطلقه', 'marital_status'],
   ['سن', 'age'],
   ['ماه و سال تولد', 'birth_month_year'],
   ['تحصیلات', 'education'],
+  ['وضعیت سربازی', 'military_status'],
+  ['شغل', 'job'],
+  ['میزان درآمد ماهیانه', 'monthly_income'],
+  ['میزان اعتقادات', 'religiosity'],
   ['نوع پوشش و میزان اعتقادات', 'clothing_and_religiosity'],
   ['نظرتون در مورد ماهواره', 'satellite_view'],
   ['قد', 'height_cm'],
@@ -193,11 +208,53 @@ function mapRangeValue(value: string) {
 }
 
 function extractProfileTitle(line: string) {
-  return line.replace(/\s*کد\s*:\s*[0-9۰-۹٠-٩].*$/, '').trim();
+  return line.replace(/\s*کد\s*:?\s*[0-9۰-۹٠-٩]*.*$/, '').trim();
+}
+
+function normalizeMaritalStatus(value: string) {
+  const status = normalizeText(value);
+
+  if (status.includes('مجرد')) {
+    return 'single';
+  }
+
+  if (status.includes('مطلق')) {
+    return 'divorced';
+  }
+
+  if (status.includes('متاهل') || status.includes('متأهل')) {
+    return 'married';
+  }
+
+  return value.trim();
+}
+
+function detectGenderFromText(text: string) {
+  const normalized = normalizeText(text);
+
+  if (
+    normalized.includes('فرم_خام_معرفی_آقا') ||
+    normalized.includes('فرم خام معرفی آقا') ||
+    normalized.includes('معرفی آقا')
+  ) {
+    return 'male';
+  }
+
+  if (
+    normalized.includes('فرم_خام_معرفی_خانم') ||
+    normalized.includes('فرم خام معرفی خانم') ||
+    normalized.includes('معرفی خانم')
+  ) {
+    return 'female';
+  }
+
+  return '';
 }
 
 function parseCaseText(text: string): ParseResult {
   const values = createEmptyCaseValues();
+  values.gender = detectGenderFromText(text);
+
   const lines = text
     .split(/\r?\n/)
     .map((line) => line.trim())
@@ -219,11 +276,7 @@ function parseCaseText(text: string): ParseResult {
 
     if (line.startsWith('#') && !line.includes(':') && !line.includes('：')) {
       const status = line.replace(/^#+/, '').trim();
-      if (normalizeText(status) === 'مجرد') {
-        values.marital_status = 'single';
-      } else {
-        values.marital_status = status;
-      }
+      values.marital_status = normalizeMaritalStatus(status);
       continue;
     }
 
@@ -241,6 +294,11 @@ function parseCaseText(text: string): ParseResult {
       continue;
     }
 
+    if (mappedKey === 'marital_status') {
+      values.marital_status = normalizeMaritalStatus(value);
+      continue;
+    }
+
     if (mappedKey === 'acceptable_spouse_age_from') {
       const { from, to } = mapRangeValue(value);
       values.acceptable_spouse_age_from = from;
@@ -249,6 +307,12 @@ function parseCaseText(text: string): ParseResult {
     }
 
     values[mappedKey] = value;
+
+    if (['military_status', 'job', 'monthly_income', 'religiosity'].includes(mappedKey)) {
+      values.gender = 'male';
+    } else if (mappedKey === 'clothing_and_religiosity') {
+      values.gender = 'female';
+    }
   }
 
   if (!code && values.case_code) {
@@ -323,10 +387,15 @@ function CaseCreator({
       const payload = {
         profile_title: parsedValues.profile_title || null,
         case_code: toNullableInteger(parsedValues.case_code),
+        gender: parsedValues.gender || null,
         marital_status: parsedValues.marital_status || null,
         age: toNullableInteger(parsedValues.age),
         birth_month_year: parsedValues.birth_month_year || null,
         education: parsedValues.education || null,
+        military_status: parsedValues.military_status || null,
+        job: parsedValues.job || null,
+        monthly_income: parsedValues.monthly_income || null,
+        religiosity: parsedValues.religiosity || null,
         clothing_and_religiosity: parsedValues.clothing_and_religiosity || null,
         satellite_view: parsedValues.satellite_view || null,
         height_cm: toNullableInteger(parsedValues.height_cm),

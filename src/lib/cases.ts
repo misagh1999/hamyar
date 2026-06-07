@@ -2,10 +2,15 @@ export type MarriageCase = {
   id: number;
   profile_title: string | null;
   case_code: number | null;
+  gender: 'male' | 'female' | string | null;
   marital_status: string | null;
   age: number | null;
   birth_month_year: string | null;
   education: string | null;
+  military_status: string | null;
+  job: string | null;
+  monthly_income: string | null;
+  religiosity: string | null;
   clothing_and_religiosity: string | null;
   satellite_view: string | null;
   height_cm: number | null;
@@ -33,10 +38,15 @@ export type MarriageCase = {
 export const CASE_FIELD_LABELS: Record<keyof Omit<MarriageCase, 'id'>, string> = {
   profile_title: 'عنوان پرونده',
   case_code: 'کد',
+  gender: 'جنسیت',
   marital_status: 'وضعیت تاهل',
   age: 'سن',
   birth_month_year: 'ماه و سال تولد',
   education: 'تحصیلات',
+  military_status: 'وضعیت سربازی',
+  job: 'شغل',
+  monthly_income: 'میزان درآمد ماهیانه',
+  religiosity: 'میزان اعتقادات',
   clothing_and_religiosity: 'نوع پوشش و میزان اعتقادات',
   satellite_view: 'نظرتون در مورد ماهواره',
   height_cm: 'قد',
@@ -73,6 +83,12 @@ export function formatMarriageCaseValue(key: keyof Omit<MarriageCase, 'id'>, val
   if (key === 'marital_status') {
     if (value === 'single') return 'مجرد';
     if (value === 'married') return 'متاهل';
+    if (value === 'divorced') return 'مطلقه';
+  }
+
+  if (key === 'gender') {
+    if (value === 'male') return 'آقا';
+    if (value === 'female') return 'خانم';
   }
 
   if (key === 'accepts_other_cities_and_villages') {
@@ -84,10 +100,11 @@ export function formatMarriageCaseValue(key: keyof Omit<MarriageCase, 'id'>, val
 }
 
 export const CASE_LIST_FIELDS: Array<{
-  key: keyof Pick<MarriageCase, 'case_code' | 'marital_status' | 'profile_title' | 'age'>;
+  key: keyof Pick<MarriageCase, 'case_code' | 'gender' | 'marital_status' | 'profile_title' | 'age'>;
   label: string;
 }> = [
   { key: 'case_code', label: 'case_code' },
+  { key: 'gender', label: 'gender' },
   { key: 'marital_status', label: 'marital_status' },
   { key: 'profile_title', label: 'profile_title' },
   { key: 'age', label: 'age' },
@@ -114,15 +131,26 @@ export type MarriageCaseFieldDefinition = {
 export const MARITAL_STATUS_OPTIONS = [
   { value: 'single', label: 'مجرد' },
   { value: 'married', label: 'متاهل' },
+  { value: 'divorced', label: 'مطلقه' },
+];
+
+export const GENDER_OPTIONS = [
+  { value: 'female', label: 'خانم' },
+  { value: 'male', label: 'آقا' },
 ];
 
 export const CASE_EDITABLE_FIELDS: MarriageCaseFieldDefinition[] = [
   { key: 'profile_title', label: 'عنوان پرونده', inputType: 'text', placeholder: 'مثلا: ❤️ #خانم_دهه_هفتاد_مجرد' },
   { key: 'case_code', label: 'کد', inputType: 'number', placeholder: '1687' },
+  { key: 'gender', label: 'جنسیت', inputType: 'select', options: GENDER_OPTIONS },
   { key: 'marital_status', label: 'وضعیت تاهل', inputType: 'select', options: MARITAL_STATUS_OPTIONS },
   { key: 'age', label: 'سن', inputType: 'number', placeholder: '25' },
   { key: 'birth_month_year', label: 'ماه و سال تولد', inputType: 'text', placeholder: 'آذر ۱۳۷۹' },
   { key: 'education', label: 'تحصیلات', inputType: 'text', placeholder: 'دانشجوی ارشد' },
+  { key: 'military_status', label: 'وضعیت سربازی', inputType: 'text' },
+  { key: 'job', label: 'شغل', inputType: 'text' },
+  { key: 'monthly_income', label: 'میزان درآمد ماهیانه', inputType: 'text' },
+  { key: 'religiosity', label: 'میزان اعتقادات', inputType: 'text' },
   { key: 'clothing_and_religiosity', label: 'نوع پوشش و میزان اعتقادات', inputType: 'text' },
   { key: 'satellite_view', label: 'نظرتون در مورد ماهواره', inputType: 'text' },
   { key: 'height_cm', label: 'قد', inputType: 'number', placeholder: '160' },

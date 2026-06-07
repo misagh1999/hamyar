@@ -1,10 +1,15 @@
 const CASE_FIELD_KEYS = [
   'profile_title',
   'case_code',
+  'gender',
   'marital_status',
   'age',
   'birth_month_year',
   'education',
+  'military_status',
+  'job',
+  'monthly_income',
+  'religiosity',
   'clothing_and_religiosity',
   'satellite_view',
   'height_cm',
@@ -26,9 +31,14 @@ const CASE_FIELD_KEYS = [
 ];
 
 const FIELD_LABEL_LOOKUP = new Map([
+  ['مجرد یا مطلقه', 'marital_status'],
   ['سن', 'age'],
   ['ماه و سال تولد', 'birth_month_year'],
   ['تحصیلات', 'education'],
+  ['وضعیت سربازی', 'military_status'],
+  ['شغل', 'job'],
+  ['میزان درآمد ماهیانه', 'monthly_income'],
+  ['میزان اعتقادات', 'religiosity'],
   ['نوع پوشش و میزان اعتقادات', 'clothing_and_religiosity'],
   ['نظرتون در مورد ماهواره', 'satellite_view'],
   ['قد', 'height_cm'],
@@ -92,7 +102,47 @@ function createEmptyValues() {
 }
 
 function extractProfileTitle(line) {
-  return line.replace(/\s*کد\s*:\s*[0-9۰-۹٠-٩].*$/, '').trim();
+  return line.replace(/\s*کد\s*:?\s*[0-9۰-۹٠-٩]*.*$/, '').trim();
+}
+
+function normalizeMaritalStatus(value) {
+  const status = normalizeText(value);
+
+  if (status.includes('مجرد')) {
+    return 'single';
+  }
+
+  if (status.includes('مطلق')) {
+    return 'divorced';
+  }
+
+  if (status.includes('متاهل') || status.includes('متأهل')) {
+    return 'married';
+  }
+
+  return value.trim();
+}
+
+function detectGenderFromText(text) {
+  const normalized = normalizeText(text);
+
+  if (
+    normalized.includes('فرم_خام_معرفی_آقا') ||
+    normalized.includes('فرم خام معرفی آقا') ||
+    normalized.includes('معرفی آقا')
+  ) {
+    return 'male';
+  }
+
+  if (
+    normalized.includes('فرم_خام_معرفی_خانم') ||
+    normalized.includes('فرم خام معرفی خانم') ||
+    normalized.includes('معرفی خانم')
+  ) {
+    return 'female';
+  }
+
+  return '';
 }
 
 export function countFilledMarriageCaseFields(values) {
@@ -101,6 +151,8 @@ export function countFilledMarriageCaseFields(values) {
 
 export function parseMarriageCaseText(text) {
   const values = createEmptyValues();
+  values.gender = detectGenderFromText(text);
+
   const lines = String(text || '')
     .split(/\r?\n/)
     .map((line) => line.trim())
@@ -124,11 +176,7 @@ export function parseMarriageCaseText(text) {
 
     if (line.startsWith('#') && !line.includes(':') && !line.includes('：')) {
       const status = line.replace(/^#+/, '').trim();
-      if (normalizeText(status) === 'مجرد') {
-        values.marital_status = 'single';
-      } else if (status) {
-        values.marital_status = status;
-      }
+      values.marital_status = normalizeMaritalStatus(status);
 
       if (status) {
         matchedFields.add('marital_status');
@@ -150,6 +198,12 @@ export function parseMarriageCaseText(text) {
       continue;
     }
 
+    if (mappedKey === 'marital_status') {
+      values.marital_status = normalizeMaritalStatus(value);
+      matchedFields.add(mappedKey);
+      continue;
+    }
+
     if (mappedKey === 'acceptable_spouse_age_from') {
       const { from, to } = mapRangeValue(value);
       values.acceptable_spouse_age_from = from;
@@ -163,6 +217,16 @@ export function parseMarriageCaseText(text) {
 
     values[mappedKey] = value;
     matchedFields.add(mappedKey);
+
+    if (['military_status', 'job', 'monthly_income', 'religiosity'].includes(mappedKey)) {
+      values.gender = 'male';
+    } else if (mappedKey === 'clothing_and_religiosity') {
+      values.gender = 'female';
+    }
+  }
+
+  if (values.gender) {
+    matchedFields.add('gender');
   }
 
   if (!code && values.case_code) {

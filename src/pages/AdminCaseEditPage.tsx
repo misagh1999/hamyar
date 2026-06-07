@@ -55,10 +55,15 @@ function buildUpdatePayload(values: FormValues) {
   return {
     profile_title: emptyToNull(values.profile_title),
     case_code: numericOrNull(values.case_code),
+    gender: emptyToNull(values.gender),
     marital_status: emptyToNull(values.marital_status),
     age: numericOrNull(values.age),
     birth_month_year: emptyToNull(values.birth_month_year),
     education: emptyToNull(values.education),
+    military_status: emptyToNull(values.military_status),
+    job: emptyToNull(values.job),
+    monthly_income: emptyToNull(values.monthly_income),
+    religiosity: emptyToNull(values.religiosity),
     clothing_and_religiosity: emptyToNull(values.clothing_and_religiosity),
     satellite_view: emptyToNull(values.satellite_view),
     height_cm: numericOrNull(values.height_cm),
@@ -237,7 +242,7 @@ export function AdminCaseEditPage() {
               <p className="label">خلاصه</p>
               <h2 className="card-title">{caseRow.profile_title ?? 'بدون عنوان'}</h2>
             </div>
-            <span className="status-pill">{formatMarriageCaseValue('marital_status', caseRow.marital_status)}</span>
+            <span className="status-pill">{formatMarriageCaseValue('gender', caseRow.gender)}</span>
           </div>
 
           <div className="edit-form-grid">

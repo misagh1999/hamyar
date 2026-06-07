@@ -11,11 +11,16 @@ const DETAIL_FIELDS: Array<{
   key: keyof Omit<MarriageCase, 'id'>;
 }> = [
   { key: 'case_code' },
+  { key: 'gender' },
   { key: 'marital_status' },
   { key: 'profile_title' },
   { key: 'age' },
   { key: 'birth_month_year' },
   { key: 'education' },
+  { key: 'military_status' },
+  { key: 'job' },
+  { key: 'monthly_income' },
+  { key: 'religiosity' },
   { key: 'clothing_and_religiosity' },
   { key: 'satellite_view' },
   { key: 'height_cm' },
@@ -109,7 +114,7 @@ export function CaseDetailPage() {
               <p className="label">خلاصه پرونده</p>
               <h2 className="card-title">{item.profile_title ?? 'بدون عنوان'}</h2>
             </div>
-            <span className="status-pill">{formatMarriageCaseValue('marital_status', item.marital_status)}</span>
+            <span className="status-pill">{formatMarriageCaseValue('gender', item.gender)}</span>
           </div>
 
           <div className="detail-grid">

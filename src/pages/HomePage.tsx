@@ -10,6 +10,7 @@ import {
 
 type CaseFilters = {
   profileTitle: string;
+  gender: string;
   maritalStatus: string;
   ageFrom: string;
   ageTo: string;
@@ -22,6 +23,7 @@ type CaseFilters = {
 
 const DEFAULT_FILTERS: CaseFilters = {
   profileTitle: '',
+  gender: '',
   maritalStatus: '',
   ageFrom: '',
   ageTo: '',
@@ -33,7 +35,7 @@ const DEFAULT_FILTERS: CaseFilters = {
 };
 
 const CASE_QUERY_FIELDS =
-  'id, profile_title, case_code, marital_status, age, birth_month_year, education, clothing_and_religiosity, satellite_view, height_cm, weight_kg, skin_color, birth_city, residence_city, parents_birth_place, parents_education, father_job_and_financial_status, siblings_count, birth_order, previous_marriage_and_children, personality_traits, future_spouse_criteria, accepts_other_cities_and_villages, acceptable_spouse_age_from, acceptable_spouse_age_to, raw_text, created_by, created_at, updated_at';
+  'id, profile_title, case_code, gender, marital_status, age, birth_month_year, education, military_status, job, monthly_income, religiosity, clothing_and_religiosity, satellite_view, height_cm, weight_kg, skin_color, birth_city, residence_city, parents_birth_place, parents_education, father_job_and_financial_status, siblings_count, birth_order, previous_marriage_and_children, personality_traits, future_spouse_criteria, accepts_other_cities_and_villages, acceptable_spouse_age_from, acceptable_spouse_age_to, raw_text, created_by, created_at, updated_at';
 
 export function HomePage() {
   const [cases, setCases] = useState<MarriageCase[]>([]);
@@ -131,6 +133,10 @@ export function HomePage() {
 
       if (filters.profileTitle) {
         query = query.eq('profile_title', filters.profileTitle);
+      }
+
+      if (filters.gender) {
+        query = query.eq('gender', filters.gender);
       }
 
       if (filters.maritalStatus) {
@@ -252,6 +258,20 @@ export function HomePage() {
             </select>
           </div>
 
+          <div className="field">
+            <label htmlFor="gender-filter">{getMarriageCaseFieldLabel('gender')}</label>
+            <select
+              id="gender-filter"
+              className="filter-control"
+              value={filters.gender}
+              onChange={(event) => handleFilterChange('gender', event.target.value)}
+            >
+              <option value="">همه</option>
+              <option value="female">خانم</option>
+              <option value="male">آقا</option>
+            </select>
+          </div>
+
           <div className="field field-span-2">
             <label>{getMarriageCaseFieldLabel('age')}</label>
             <div className="range-grid">
@@ -350,7 +370,7 @@ export function HomePage() {
             <div className="case-card-header">
               <span className="case-pill">پرونده #{item.case_code ?? '-'}</span>
               <span className="case-pill case-pill-muted">
-                {formatMarriageCaseValue('marital_status', item.marital_status)}
+                {formatMarriageCaseValue('gender', item.gender)}
               </span>
             </div>
 
@@ -362,8 +382,8 @@ export function HomePage() {
                 <p>{formatMarriageCaseValue('case_code', item.case_code)}</p>
               </div>
               <div>
-                <span className="label">{getMarriageCaseFieldLabel('marital_status')}</span>
-                <p>{formatMarriageCaseValue('marital_status', item.marital_status)}</p>
+                <span className="label">{getMarriageCaseFieldLabel('gender')}</span>
+                <p>{formatMarriageCaseValue('gender', item.gender)}</p>
               </div>
               <div>
                 <span className="label">{getMarriageCaseFieldLabel('profile_title')}</span>

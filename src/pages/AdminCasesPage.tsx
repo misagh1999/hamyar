@@ -31,7 +31,7 @@ export function AdminCasesPage() {
       const { data, error: fetchError } = await supabase
         .from('marriage_cases')
         .select(
-          'id, profile_title, case_code, marital_status, age, education, height_cm, weight_kg, created_at'
+          'id, profile_title, case_code, gender, marital_status, age, education, height_cm, weight_kg, created_at'
         )
         .order('created_at', { ascending: false });
 
@@ -87,7 +87,7 @@ export function AdminCasesPage() {
               <div className="case-card-header">
                 <span className="case-pill">پرونده #{formatMarriageCaseValue('case_code', item.case_code)}</span>
                 <span className="case-pill case-pill-muted">
-                  {formatMarriageCaseValue('marital_status', item.marital_status)}
+                  {formatMarriageCaseValue('gender', item.gender)}
                 </span>
               </div>
 
@@ -95,8 +95,8 @@ export function AdminCasesPage() {
 
               <div className="case-meta">
                 <div>
-                  <span className="label">{getMarriageCaseFieldLabel('age')}</span>
-                  <p>{formatMarriageCaseValue('age', item.age)}</p>
+                  <span className="label">{getMarriageCaseFieldLabel('gender')}</span>
+                  <p>{formatMarriageCaseValue('gender', item.gender)}</p>
                 </div>
                 <div>
                   <span className="label">{getMarriageCaseFieldLabel('education')}</span>
