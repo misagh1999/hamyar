@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import {
@@ -37,9 +37,14 @@ const DEFAULT_FILTERS: CaseFilters = {
 const CASE_QUERY_FIELDS =
   'id, profile_title, case_code, gender, marital_status, age, birth_month_year, education, military_status, job, monthly_income, religiosity, clothing_and_religiosity, satellite_view, height_cm, weight_kg, skin_color, birth_city, residence_city, parents_birth_place, parents_education, father_job_and_financial_status, siblings_count, birth_order, previous_marriage_and_children, personality_traits, future_spouse_criteria, accepts_other_cities_and_villages, acceptable_spouse_age_from, acceptable_spouse_age_to, raw_text, created_by, created_at, updated_at';
 
+const CASES_PAGE_SIZE = 15;
+
 export function HomePage() {
   const [cases, setCases] = useState<MarriageCase[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMoreCases, setHasMoreCases] = useState(true);
+  const [currentPage, setCurrentPage] = useState(0);
   const [optionsLoading, setOptionsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filtersError, setFiltersError] = useState<string | null>(null);
@@ -47,6 +52,8 @@ export function HomePage() {
   const [profileTitleOptions, setProfileTitleOptions] = useState<CaseDropdownOption[]>([]);
   const [maritalStatusOptions, setMaritalStatusOptions] = useState<CaseDropdownOption[]>([]);
   const [educationOptions, setEducationOptions] = useState<CaseDropdownOption[]>([]);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     let active = true;
@@ -115,18 +122,22 @@ export function HomePage() {
     };
   }, []);
 
-  useEffect(() => {
-    let active = true;
-
-    async function loadCases() {
+  const fetchCasesPage = useCallback(
+    async (pageNumber: number, mode: 'replace' | 'append', requestId: number) => {
       if (!supabase) {
-        if (!active) return;
         setError('Supabase is not configured.');
         setLoading(false);
+        setLoadingMore(false);
+        setHasMoreCases(false);
         return;
       }
 
-      setLoading(true);
+      if (mode === 'replace') {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
+
       setError(null);
 
       let query = supabase.from('marriage_cases').select(CASE_QUERY_FIELDS).order('created_at', { ascending: false });
@@ -171,26 +182,76 @@ export function HomePage() {
         query = query.lte('weight_kg', Number(filters.weightTo));
       }
 
-      const { data, error: fetchError } = await query;
+      const from = pageNumber * CASES_PAGE_SIZE;
+      const to = from + CASES_PAGE_SIZE - 1;
+      const { data, error: fetchError } = await query.range(from, to);
 
-      if (!active) return;
+      if (requestId !== requestIdRef.current) return;
 
       if (fetchError) {
         setError(fetchError.message);
-        setCases([]);
+        if (mode === 'replace') {
+          setCases([]);
+        } else {
+          setHasMoreCases(false);
+        }
       } else {
-        setCases((data ?? []) as MarriageCase[]);
+        const nextCases = (data ?? []) as MarriageCase[];
+
+        setCases((currentCases) => {
+          if (mode === 'replace') {
+            return nextCases;
+          }
+
+          const existingIds = new Set(currentCases.map((item) => item.id));
+          return [...currentCases, ...nextCases.filter((item) => !existingIds.has(item.id))];
+        });
+        setCurrentPage(pageNumber);
+        setHasMoreCases(nextCases.length === CASES_PAGE_SIZE);
       }
 
       setLoading(false);
-    }
+      setLoadingMore(false);
+    },
+    [filters]
+  );
 
-    void loadCases();
+  useEffect(() => {
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+
+    setCases([]);
+    setCurrentPage(0);
+    setHasMoreCases(true);
+    setLoadingMore(false);
+    void fetchCasesPage(0, 'replace', requestId);
+  }, [fetchCasesPage]);
+
+  const loadNextCasesPage = useCallback(() => {
+    if (loading || loadingMore || !hasMoreCases) return;
+
+    void fetchCasesPage(currentPage + 1, 'append', requestIdRef.current);
+  }, [currentPage, fetchCasesPage, hasMoreCases, loading, loadingMore]);
+
+  useEffect(() => {
+    const node = loadMoreRef.current;
+    if (!node || !hasMoreCases) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          loadNextCasesPage();
+        }
+      },
+      { rootMargin: '360px 0px' }
+    );
+
+    observer.observe(node);
 
     return () => {
-      active = false;
+      observer.disconnect();
     };
-  }, [filters]);
+  }, [hasMoreCases, loadNextCasesPage]);
 
   function handleFilterChange(key: keyof CaseFilters, value: string) {
     setFilters((current) => ({
@@ -397,6 +458,13 @@ export function HomePage() {
           </Link>
         ))}
       </div>
+
+      <div ref={loadMoreRef} className="load-more-sentinel" aria-hidden="true" />
+
+      {loadingMore ? <div className="notice">در حال دریافت موارد بیشتر...</div> : null}
+      {!loading && !loadingMore && cases.length > 0 && !hasMoreCases ? (
+        <div className="notice notice-subtle">همه کیس‌ها نمایش داده شد.</div>
+      ) : null}
     </section>
   );
 }
