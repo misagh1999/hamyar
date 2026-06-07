@@ -44,6 +44,7 @@ type ParseResult = {
 };
 
 const CASE_TABLE_NAME = 'marriage_cases';
+const SHOW_EITAA_AUTO_CALL = /^(1|true|yes)$/i.test(import.meta.env.VITE_SHOW_EITAA_AUTO_CALL?.trim() || '');
 
 const CASE_FIELD_DEFINITIONS: CaseFieldDefinition[] = [
   { key: 'profile_title', label: 'profile_title', placeholder: 'مثلا: ❤️ #خانم_دهه_هفتاد_مجرد' },
@@ -616,9 +617,11 @@ export function AdminPage() {
             <Link className="button button-secondary admin-link-button" to="/admin/new-case">
               ثبت کیس جدید
             </Link>
-            <Link className="button button-secondary admin-link-button" to="/admin/eitaa?autostart=1">
-              فراخوانی خودکار
-            </Link>
+            {SHOW_EITAA_AUTO_CALL ? (
+              <Link className="button button-secondary admin-link-button" to="/admin/eitaa?autostart=1">
+                فراخوانی خودکار
+              </Link>
+            ) : null}
             <button className="button button-secondary" type="button" onClick={handleLogout} disabled={submitting}>
               {submitting ? 'در حال خروج...' : 'خروج از حساب'}
             </button>
