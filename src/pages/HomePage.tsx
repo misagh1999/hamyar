@@ -19,6 +19,7 @@ type CaseFilters = {
   heightTo: string;
   weightFrom: string;
   weightTo: string;
+  residenceCity: string;
 };
 
 const DEFAULT_FILTERS: CaseFilters = {
@@ -32,6 +33,7 @@ const DEFAULT_FILTERS: CaseFilters = {
   heightTo: '',
   weightFrom: '',
   weightTo: '',
+  residenceCity: '',
 };
 
 const CASE_QUERY_FIELDS =
@@ -52,6 +54,7 @@ export function HomePage() {
   const [profileTitleOptions, setProfileTitleOptions] = useState<CaseDropdownOption[]>([]);
   const [maritalStatusOptions, setMaritalStatusOptions] = useState<CaseDropdownOption[]>([]);
   const [educationOptions, setEducationOptions] = useState<CaseDropdownOption[]>([]);
+  const [residenceCityOptions, setResidenceCityOptions] = useState<CaseDropdownOption[]>([]);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const requestIdRef = useRef(0);
 
@@ -72,24 +75,28 @@ export function HomePage() {
         profileTitleResult,
         maritalStatusResult,
         educationResult,
+        residenceCityResult,
       ] = await Promise.all([
         supabase.rpc('unique_profile_titles'),
         supabase.rpc('unique_marital_statuses'),
         supabase.rpc('unique_educations'),
+        supabase.rpc('unique_residence_cities'),
       ]);
 
       if (!active) return;
 
-      if (profileTitleResult.error || maritalStatusResult.error || educationResult.error) {
+      if (profileTitleResult.error || maritalStatusResult.error || educationResult.error || residenceCityResult.error) {
         setFiltersError(
           profileTitleResult.error?.message ??
             maritalStatusResult.error?.message ??
             educationResult.error?.message ??
+            residenceCityResult.error?.message ??
             'Failed to load filter options.'
         );
         setProfileTitleOptions([]);
         setMaritalStatusOptions([]);
         setEducationOptions([]);
+        setResidenceCityOptions([]);
       } else {
         setFiltersError(null);
         setProfileTitleOptions(
@@ -106,6 +113,12 @@ export function HomePage() {
         );
         setEducationOptions(
           ((educationResult.data ?? []) as Array<{ value: string }>).map((item) => ({
+            value: item.value,
+            label: item.value,
+          }))
+        );
+        setResidenceCityOptions(
+          ((residenceCityResult.data ?? []) as Array<{ value: string }>).map((item) => ({
             value: item.value,
             label: item.value,
           }))
@@ -180,6 +193,10 @@ export function HomePage() {
 
       if (filters.weightTo) {
         query = query.lte('weight_kg', Number(filters.weightTo));
+      }
+
+      if (filters.residenceCity) {
+        query = query.eq('residence_city', filters.residenceCity);
       }
 
       const from = pageNumber * CASES_PAGE_SIZE;
@@ -415,6 +432,24 @@ export function HomePage() {
                 onChange={(event) => handleFilterChange('weightTo', event.target.value)}
               />
             </div>
+          </div>
+
+          <div className="field">
+            <label htmlFor="residence-city-filter">{getMarriageCaseFieldLabel('residence_city')}</label>
+            <select
+              id="residence-city-filter"
+              className="filter-control"
+              value={filters.residenceCity}
+              onChange={(event) => handleFilterChange('residenceCity', event.target.value)}
+              disabled={optionsLoading}
+            >
+              <option value="">همه</option>
+              {residenceCityOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
